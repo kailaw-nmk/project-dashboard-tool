@@ -16,6 +16,7 @@ import { importProjectData } from '@/lib/import'
 import { AppShell } from '@/components/layout/app-shell'
 import { DashboardTabs } from '@/components/dashboard/dashboard-tabs'
 import { SystemDetailSheet } from '@/components/system/system-detail-sheet'
+import { SystemListView } from '@/components/system/system-list-view'
 import { useActiveView } from '@/hooks/use-project'
 
 export default function Home() {
@@ -106,11 +107,7 @@ function MainContent() {
     case 'dashboard':
       return <DashboardTabs />
     case 'system':
-      return (
-        <div className="flex items-center justify-center py-20 text-zinc-400">
-          システム管理 — 準備中
-        </div>
-      )
+      return <SystemListView />
     case 'history':
       return (
         <div className="flex items-center justify-center py-20 text-zinc-400">

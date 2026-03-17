@@ -36,6 +36,21 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Claude Code local settings (contains PC-specific paths)
+.claude/settings.local.json
+
+# MCP config (contains local file paths)
+.mcp.json
+
+# Playwright MCP temp files
+.playwright-mcp/
+
+# Dev screenshots
+step*.png
+
+# Launcher scripts (local use only)
+dev.bat
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
