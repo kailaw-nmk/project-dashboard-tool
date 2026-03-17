@@ -1,0 +1,555 @@
+{
+  "version": "1.0.0",
+  "projectName": "SoSプロジェクト",
+  "lastUpdated": "2026-03-17T10:00:00Z",
+  "currentWeek": "2026-W12",
+  "settings": {
+    "statusOptions": [
+      { "id": "on-track", "label": "順調", "color": "#22c55e", "icon": "circle-check" },
+      { "id": "at-risk", "label": "注意", "color": "#eab308", "icon": "circle-alert" },
+      { "id": "delayed", "label": "遅延", "color": "#ef4444", "icon": "circle-x" },
+      { "id": "stopped", "label": "停止", "color": "#6b7280", "icon": "circle-minus" }
+    ],
+    "phaseOptions": [
+      { "id": "requirements", "label": "要件定義", "order": 1 },
+      { "id": "design", "label": "設計", "order": 2 },
+      { "id": "implementation", "label": "実装", "order": 3 },
+      { "id": "testing", "label": "テスト", "order": 4 },
+      { "id": "release", "label": "リリース", "order": 5 }
+    ],
+    "keyItemTypes": [
+      { "id": "milestone", "label": "マイルストーン", "icon": "flag" },
+      { "id": "risk", "label": "リスク", "icon": "alert-triangle" },
+      { "id": "decision", "label": "技術決定", "icon": "wrench" },
+      { "id": "dependency", "label": "外部依存", "icon": "link" }
+    ]
+  },
+  "systems": [
+    {
+      "id": "sys-001",
+      "name": "認証基盤",
+      "description": "ユーザー認証・認可を担うコアシステム",
+      "owner": "田中太郎",
+      "status": "on-track",
+      "phase": "testing",
+      "comment": "テスト工程順調に推移中。来週にステージング環境デプロイ予定。",
+      "position": { "x": 100, "y": 50 },
+      "issues": [
+        {
+          "id": "issue-001",
+          "title": "トークン有効期限の見直し",
+          "status": "open",
+          "priority": "high",
+          "assignee": "田中太郎",
+          "dueDate": "2026-03-20",
+          "description": "リフレッシュトークンの有効期限が短すぎるとの指摘"
+        },
+        {
+          "id": "issue-002",
+          "title": "ログ出力フォーマット改善",
+          "status": "in-progress",
+          "priority": "medium",
+          "assignee": "鈴木花子",
+          "dueDate": "2026-03-25",
+          "description": "構造化ログへの移行"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-001",
+          "type": "milestone",
+          "title": "v2.0リリース",
+          "description": "OAuth2.1対応版リリース",
+          "dueDate": "2026-04-01",
+          "status": "open"
+        },
+        {
+          "id": "ki-002",
+          "type": "risk",
+          "title": "認証プロバイダ移行リスク",
+          "description": "現行プロバイダのEOLに伴う移行が必要",
+          "status": "open"
+        },
+        {
+          "id": "ki-003",
+          "type": "decision",
+          "title": "OAuth2.1採用",
+          "description": "セキュリティ強化のためOAuth2.1を採用決定",
+          "status": "closed"
+        }
+      ],
+      "createdAt": "2026-01-15T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-002",
+      "name": "決済システム",
+      "description": "クレジットカード・電子マネー等の決済処理",
+      "owner": "佐藤次郎",
+      "status": "at-risk",
+      "phase": "implementation",
+      "comment": "外部決済APIの仕様変更により一部実装の見直しが必要。1週間程度の遅延見込み。",
+      "position": { "x": 400, "y": 50 },
+      "issues": [
+        {
+          "id": "issue-003",
+          "title": "決済API v3マイグレーション",
+          "status": "open",
+          "priority": "high",
+          "assignee": "佐藤次郎",
+          "dueDate": "2026-03-22",
+          "description": "決済プロバイダAPIのv2→v3移行対応"
+        },
+        {
+          "id": "issue-004",
+          "title": "タイムアウト処理の改善",
+          "status": "open",
+          "priority": "high",
+          "assignee": "山田三郎",
+          "dueDate": "2026-03-18",
+          "description": "決済タイムアウト時のリトライ・冪等性保証"
+        },
+        {
+          "id": "issue-005",
+          "title": "レシート生成機能",
+          "status": "in-progress",
+          "priority": "medium",
+          "assignee": "佐藤次郎",
+          "dueDate": "2026-03-28",
+          "description": "電子レシートPDF生成"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-004",
+          "type": "dependency",
+          "title": "決済プロバイダAPI v3リリース待ち",
+          "description": "プロバイダ側のAPI v3正式リリースを待って結合テスト実施",
+          "dueDate": "2026-03-25",
+          "status": "in-progress"
+        },
+        {
+          "id": "ki-005",
+          "type": "risk",
+          "title": "PCI DSS準拠対応",
+          "description": "カード情報の取扱いに関するセキュリティ基準への準拠",
+          "status": "open"
+        },
+        {
+          "id": "ki-006",
+          "type": "milestone",
+          "title": "決済基盤v1.5リリース",
+          "description": "電子マネー対応版",
+          "dueDate": "2026-04-15",
+          "status": "open"
+        }
+      ],
+      "createdAt": "2026-01-20T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-003",
+      "name": "在庫管理",
+      "description": "商品在庫のリアルタイム管理",
+      "owner": "高橋花子",
+      "status": "on-track",
+      "phase": "design",
+      "comment": "設計レビュー完了。来週から実装フェーズに移行予定。",
+      "position": { "x": 400, "y": 250 },
+      "issues": [
+        {
+          "id": "issue-006",
+          "title": "在庫引当ロジック設計",
+          "status": "closed",
+          "priority": "high",
+          "assignee": "高橋花子",
+          "dueDate": "2026-03-10",
+          "description": "並行注文時の在庫引当の排他制御設計"
+        },
+        {
+          "id": "issue-007",
+          "title": "倉庫間移動API設計",
+          "status": "in-progress",
+          "priority": "medium",
+          "assignee": "高橋花子",
+          "dueDate": "2026-03-20",
+          "description": "複数倉庫間の在庫移動APIの設計"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-007",
+          "type": "milestone",
+          "title": "在庫管理v1.0リリース",
+          "description": "基本在庫管理機能のリリース",
+          "dueDate": "2026-05-01",
+          "status": "open"
+        },
+        {
+          "id": "ki-008",
+          "type": "decision",
+          "title": "イベントソーシング採用",
+          "description": "在庫変動履歴をイベントソーシングで管理する方針を決定",
+          "status": "closed"
+        }
+      ],
+      "createdAt": "2026-02-01T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-004",
+      "name": "ユーザー管理",
+      "description": "顧客情報・アカウント管理",
+      "owner": "田中太郎",
+      "status": "on-track",
+      "phase": "testing",
+      "comment": "単体テスト完了。結合テストに入る予定。",
+      "position": { "x": 100, "y": 250 },
+      "issues": [
+        {
+          "id": "issue-008",
+          "title": "個人情報暗号化対応",
+          "status": "in-progress",
+          "priority": "high",
+          "assignee": "田中太郎",
+          "dueDate": "2026-03-22",
+          "description": "PII（個人識別情報）のAES-256暗号化対応"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-009",
+          "type": "milestone",
+          "title": "ユーザー管理v1.0リリース",
+          "description": "基本アカウント管理機能",
+          "dueDate": "2026-03-30",
+          "status": "open"
+        }
+      ],
+      "createdAt": "2026-01-15T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-005",
+      "name": "通知サービス",
+      "description": "メール・プッシュ通知の統合送信基盤",
+      "owner": "山田三郎",
+      "status": "on-track",
+      "phase": "implementation",
+      "comment": "メール送信機能実装完了。プッシュ通知の実装に着手。",
+      "position": { "x": 250, "y": 400 },
+      "issues": [
+        {
+          "id": "issue-009",
+          "title": "メールテンプレートエンジン選定",
+          "status": "closed",
+          "priority": "medium",
+          "assignee": "山田三郎",
+          "dueDate": "2026-03-05",
+          "description": "React EmailかMJMLかの技術選定"
+        },
+        {
+          "id": "issue-010",
+          "title": "プッシュ通知Firebase連携",
+          "status": "open",
+          "priority": "medium",
+          "assignee": "山田三郎",
+          "dueDate": "2026-03-28",
+          "description": "Firebase Cloud Messagingとの連携実装"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-010",
+          "type": "dependency",
+          "title": "Firebase契約",
+          "description": "Firebase Blazeプランの契約・設定待ち",
+          "dueDate": "2026-03-20",
+          "status": "in-progress"
+        }
+      ],
+      "createdAt": "2026-02-10T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-006",
+      "name": "分析基盤",
+      "description": "データ分析・BIダッシュボード基盤",
+      "owner": "伊藤五郎",
+      "status": "delayed",
+      "phase": "requirements",
+      "comment": "要件の優先度整理が難航。ステークホルダーとの合意形成に時間を要している。",
+      "position": { "x": 550, "y": 250 },
+      "issues": [
+        {
+          "id": "issue-011",
+          "title": "KPI定義のすり合わせ",
+          "status": "open",
+          "priority": "high",
+          "assignee": "伊藤五郎",
+          "dueDate": "2026-03-15",
+          "description": "事業部間でKPI定義が異なるため統一が必要"
+        },
+        {
+          "id": "issue-012",
+          "title": "データソース一覧整理",
+          "status": "open",
+          "priority": "medium",
+          "assignee": "伊藤五郎",
+          "dueDate": "2026-03-20",
+          "description": "連携対象の全データソースの棚卸し"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-011",
+          "type": "risk",
+          "title": "要件スコープ肥大化",
+          "description": "各部門からの要望が多く、スコープコントロールが課題",
+          "status": "open"
+        },
+        {
+          "id": "ki-012",
+          "type": "decision",
+          "title": "DWH基盤選定",
+          "description": "BigQuery vs Snowflakeの技術選定",
+          "status": "open"
+        }
+      ],
+      "createdAt": "2026-02-15T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-007",
+      "name": "APIゲートウェイ",
+      "description": "全システム共通のAPI管理・ルーティング基盤",
+      "owner": "鈴木花子",
+      "status": "on-track",
+      "phase": "release",
+      "comment": "v1.0を本番リリース済み。安定稼働中。",
+      "position": { "x": 250, "y": 150 },
+      "issues": [],
+      "keyItems": [
+        {
+          "id": "ki-013",
+          "type": "milestone",
+          "title": "v1.0本番リリース完了",
+          "description": "本番環境へのデプロイ完了",
+          "dueDate": "2026-03-01",
+          "status": "closed"
+        }
+      ],
+      "createdAt": "2026-01-10T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    },
+    {
+      "id": "sys-008",
+      "name": "管理画面",
+      "description": "運用管理者向けの管理コンソール",
+      "owner": "鈴木花子",
+      "status": "at-risk",
+      "phase": "implementation",
+      "comment": "UIデザインの大幅変更により実装のやり直しが発生。",
+      "position": { "x": 550, "y": 50 },
+      "issues": [
+        {
+          "id": "issue-013",
+          "title": "UIリデザイン対応",
+          "status": "in-progress",
+          "priority": "high",
+          "assignee": "鈴木花子",
+          "dueDate": "2026-03-25",
+          "description": "Figmaデザインの変更に伴う実装修正"
+        },
+        {
+          "id": "issue-014",
+          "title": "権限管理画面",
+          "status": "open",
+          "priority": "medium",
+          "assignee": "鈴木花子",
+          "dueDate": "2026-04-01",
+          "description": "RBAC設定画面の実装"
+        }
+      ],
+      "keyItems": [
+        {
+          "id": "ki-014",
+          "type": "risk",
+          "title": "デザイン変更による手戻り",
+          "description": "頻繁なUIデザイン変更によるスケジュール遅延リスク",
+          "status": "open"
+        },
+        {
+          "id": "ki-015",
+          "type": "milestone",
+          "title": "管理画面βリリース",
+          "description": "社内限定のβ版リリース",
+          "dueDate": "2026-04-15",
+          "status": "open"
+        }
+      ],
+      "createdAt": "2026-02-01T09:00:00Z",
+      "updatedAt": "2026-03-17T10:00:00Z"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "dep-001",
+      "sourceSystemId": "sys-001",
+      "targetSystemId": "sys-002",
+      "label": "認証トークン検証",
+      "description": "決済処理時のユーザー認証トークン検証",
+      "type": "api"
+    },
+    {
+      "id": "dep-002",
+      "sourceSystemId": "sys-001",
+      "targetSystemId": "sys-004",
+      "label": "ユーザー認証情報",
+      "description": "ユーザーアカウントと認証情報の連携",
+      "type": "data"
+    },
+    {
+      "id": "dep-003",
+      "sourceSystemId": "sys-002",
+      "targetSystemId": "sys-003",
+      "label": "在庫引当連携",
+      "description": "決済確定時の在庫引当処理",
+      "type": "event"
+    },
+    {
+      "id": "dep-004",
+      "sourceSystemId": "sys-007",
+      "targetSystemId": "sys-001",
+      "label": "API ルーティング",
+      "description": "認証APIへのリクエストルーティング",
+      "type": "api"
+    },
+    {
+      "id": "dep-005",
+      "sourceSystemId": "sys-007",
+      "targetSystemId": "sys-002",
+      "label": "API ルーティング",
+      "description": "決済APIへのリクエストルーティング",
+      "type": "api"
+    },
+    {
+      "id": "dep-006",
+      "sourceSystemId": "sys-007",
+      "targetSystemId": "sys-003",
+      "label": "API ルーティング",
+      "description": "在庫APIへのリクエストルーティング",
+      "type": "api"
+    },
+    {
+      "id": "dep-007",
+      "sourceSystemId": "sys-002",
+      "targetSystemId": "sys-005",
+      "label": "決済通知",
+      "description": "決済完了時のメール・プッシュ通知送信",
+      "type": "event"
+    },
+    {
+      "id": "dep-008",
+      "sourceSystemId": "sys-004",
+      "targetSystemId": "sys-005",
+      "label": "アカウント通知",
+      "description": "アカウント作成・変更時の通知送信",
+      "type": "event"
+    },
+    {
+      "id": "dep-009",
+      "sourceSystemId": "sys-006",
+      "targetSystemId": "sys-002",
+      "label": "決済データ取込",
+      "description": "決済トランザクションデータの分析基盤への取込",
+      "type": "data"
+    },
+    {
+      "id": "dep-010",
+      "sourceSystemId": "sys-006",
+      "targetSystemId": "sys-003",
+      "label": "在庫データ取込",
+      "description": "在庫変動データの分析基盤への取込",
+      "type": "data"
+    },
+    {
+      "id": "dep-011",
+      "sourceSystemId": "sys-008",
+      "targetSystemId": "sys-001",
+      "label": "認証設定管理",
+      "description": "管理画面から認証ポリシーを設定",
+      "type": "api"
+    },
+    {
+      "id": "dep-012",
+      "sourceSystemId": "sys-008",
+      "targetSystemId": "sys-004",
+      "label": "ユーザー管理操作",
+      "description": "管理画面からのユーザーアカウント操作",
+      "type": "api"
+    }
+  ],
+  "weeklySnapshots": [
+    {
+      "week": "2026-W09",
+      "date": "2026-02-24T10:00:00Z",
+      "systems": [
+        { "systemId": "sys-001", "status": "at-risk", "phase": "implementation", "comment": "実装中、認証ライブラリの不具合対応中", "openIssues": 3, "openRisks": 1, "openKeyItems": 3 },
+        { "systemId": "sys-002", "status": "on-track", "phase": "implementation", "comment": "実装順調", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-003", "status": "on-track", "phase": "design", "comment": "設計フェーズ開始", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-004", "status": "on-track", "phase": "implementation", "comment": "実装中", "openIssues": 2, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-005", "status": "on-track", "phase": "implementation", "comment": "メール機能実装中", "openIssues": 2, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-006", "status": "on-track", "phase": "requirements", "comment": "要件ヒアリング中", "openIssues": 1, "openRisks": 0, "openKeyItems": 2 },
+        { "systemId": "sys-007", "status": "on-track", "phase": "testing", "comment": "リリース前テスト", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-008", "status": "on-track", "phase": "design", "comment": "UI設計中", "openIssues": 0, "openRisks": 0, "openKeyItems": 1 }
+      ],
+      "summary": "全体的に順調。認証基盤のライブラリ不具合に注意。"
+    },
+    {
+      "week": "2026-W10",
+      "date": "2026-03-03T10:00:00Z",
+      "systems": [
+        { "systemId": "sys-001", "status": "at-risk", "phase": "implementation", "comment": "ライブラリ不具合解消、実装完了間近", "openIssues": 2, "openRisks": 1, "openKeyItems": 3 },
+        { "systemId": "sys-002", "status": "on-track", "phase": "implementation", "comment": "実装進行中", "openIssues": 3, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-003", "status": "on-track", "phase": "design", "comment": "設計レビュー中", "openIssues": 2, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-004", "status": "on-track", "phase": "testing", "comment": "単体テスト開始", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-005", "status": "on-track", "phase": "implementation", "comment": "メール機能完了、プッシュ通知着手", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-006", "status": "at-risk", "phase": "requirements", "comment": "要件の優先度整理で調整中", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-007", "status": "on-track", "phase": "release", "comment": "v1.0リリース完了", "openIssues": 0, "openRisks": 0, "openKeyItems": 0 },
+        { "systemId": "sys-008", "status": "on-track", "phase": "implementation", "comment": "実装開始", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 }
+      ],
+      "summary": "APIゲートウェイv1.0リリース完了。分析基盤の要件整理に遅れ。"
+    },
+    {
+      "week": "2026-W11",
+      "date": "2026-03-10T10:00:00Z",
+      "systems": [
+        { "systemId": "sys-001", "status": "on-track", "phase": "testing", "comment": "テスト開始、順調", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-002", "status": "at-risk", "phase": "implementation", "comment": "外部API仕様変更の影響あり", "openIssues": 4, "openRisks": 2, "openKeyItems": 3 },
+        { "systemId": "sys-003", "status": "on-track", "phase": "design", "comment": "設計レビュー完了", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-004", "status": "on-track", "phase": "testing", "comment": "単体テスト完了", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-005", "status": "on-track", "phase": "implementation", "comment": "プッシュ通知実装中", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-006", "status": "delayed", "phase": "requirements", "comment": "要件合意に難航", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-007", "status": "on-track", "phase": "release", "comment": "安定稼働中", "openIssues": 0, "openRisks": 0, "openKeyItems": 0 },
+        { "systemId": "sys-008", "status": "at-risk", "phase": "implementation", "comment": "UIデザイン変更発生", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 }
+      ],
+      "summary": "認証基盤がテスト移行で改善。決済システムで外部API仕様変更の影響。分析基盤は遅延。"
+    },
+    {
+      "week": "2026-W12",
+      "date": "2026-03-17T10:00:00Z",
+      "systems": [
+        { "systemId": "sys-001", "status": "on-track", "phase": "testing", "comment": "テスト工程順調", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-002", "status": "at-risk", "phase": "implementation", "comment": "API対応中、1週間遅延見込み", "openIssues": 3, "openRisks": 2, "openKeyItems": 3 },
+        { "systemId": "sys-003", "status": "on-track", "phase": "design", "comment": "設計完了、来週から実装", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-004", "status": "on-track", "phase": "testing", "comment": "結合テスト準備中", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-005", "status": "on-track", "phase": "implementation", "comment": "プッシュ通知実装中", "openIssues": 1, "openRisks": 0, "openKeyItems": 1 },
+        { "systemId": "sys-006", "status": "delayed", "phase": "requirements", "comment": "要件合意に難航中", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 },
+        { "systemId": "sys-007", "status": "on-track", "phase": "release", "comment": "安定稼働中", "openIssues": 0, "openRisks": 0, "openKeyItems": 0 },
+        { "systemId": "sys-008", "status": "at-risk", "phase": "implementation", "comment": "UIリデザイン対応中", "openIssues": 2, "openRisks": 1, "openKeyItems": 2 }
+      ],
+      "summary": "認証基盤・ユーザー管理が順調。決済システムのAPI対応と分析基盤の要件整理が課題。"
+    }
+  ]
+}
