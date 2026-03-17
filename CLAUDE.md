@@ -46,9 +46,14 @@ src/
 │   ├── utils.ts            # ユーティリティ関数
 │   ├── export.ts           # JSON/PNGエクスポート
 │   ├── import.ts           # JSONインポート + バリデーション
+│   ├── snapshot.ts          # スナップショット生成
 │   └── sample-data.ts      # サンプルデータ
-└── hooks/
-    └── use-project.ts      # カスタムフック
+├── hooks/
+│   └── use-project.ts      # カスタムフック
+└── __tests__/              # ユニットテスト
+    ├── project-store.test.ts
+    ├── form-schemas.test.ts
+    └── snapshot.test.ts
 ```
 
 ## コーディング規約
@@ -75,11 +80,23 @@ src/
 - Weeklyスナップショットで履歴管理
 - 詳細は SPECIFICATION.md セクション4 を参照
 
+## 実装状況
+全機能実装完了:
+- Phase 1: 基盤構築（型定義、Zustandストア、データI/O、ウェルカム画面）
+- Phase 2: レイアウト・ダッシュボードUI（ヘッダー/サイドナビ/フッター、サマリー/ネットワーク図/一覧の3タブ）
+- Phase 3: システム管理・編集機能（システム/Issue/キーアイテム/依存関係のCRUD）
+- Phase 4: 履歴・スナップショット機能（Weekly保存、Rechartsグラフ2種）
+- Phase 5: 設定画面（ステータス/フェーズ/キーアイテムタイプ編集）
+- Phase 6: エクスポート（JSON + PNGダウンロード）
+
 ## テスト
-- Vitest + React Testing Library
-- 主要なストアロジックとバリデーションのユニットテスト
+- Vitest + jsdom 環境
+- `npm test` で実行（39テスト）
+- テスト対象: Zustandストア全CRUDアクション、Zodフォームバリデーション、スナップショット生成ロジック
+- テストファイル: `src/__tests__/` 配下
 
 ## デプロイ
-- Vercel（無料枠）
+- Vercel（無料枠）: https://project-dashboard-gamma-ten.vercel.app
 - `next.config.ts` で `output: 'export'` 設定
-- GitHub連携で自動デプロイ
+- GitHub連携で自動デプロイ（masterプッシュで自動反映）
+- リポジトリ: https://github.com/kailaw-nmk/project-dashboard-tool
