@@ -17,6 +17,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { DashboardTabs } from '@/components/dashboard/dashboard-tabs'
 import { SystemDetailSheet } from '@/components/system/system-detail-sheet'
 import { SystemListView } from '@/components/system/system-list-view'
+import { HistoryTabs } from '@/components/history/history-tabs'
 import { useActiveView } from '@/hooks/use-project'
 
 export default function Home() {
@@ -109,11 +110,7 @@ function MainContent() {
     case 'system':
       return <SystemListView />
     case 'history':
-      return (
-        <div className="flex items-center justify-center py-20 text-zinc-400">
-          履歴 — 準備中
-        </div>
-      )
+      return <HistoryTabs />
     case 'settings':
       return (
         <div className="flex items-center justify-center py-20 text-zinc-400">
