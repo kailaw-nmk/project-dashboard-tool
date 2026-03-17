@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Database, Download, FileUp, Trash2, Upload } from 'lucide-react'
+import { Database, Download, FileUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -13,10 +13,14 @@ import {
 import { useProjectStore } from '@/stores/project-store'
 import { loadSampleData } from '@/lib/sample-data'
 import { importProjectData } from '@/lib/import'
-import { exportProjectDataAsJson } from '@/lib/export'
+import { AppShell } from '@/components/layout/app-shell'
+import { DashboardTabs } from '@/components/dashboard/dashboard-tabs'
+import { SystemDetailSheet } from '@/components/system/system-detail-sheet'
+import { useActiveView } from '@/hooks/use-project'
 
 export default function Home() {
-  const { projectData, setProjectData, clearProjectData } = useProjectStore()
+  const projectData = useProjectStore((s) => s.projectData)
+  const setProjectData = useProjectStore((s) => s.setProjectData)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -43,17 +47,6 @@ export default function Home() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }
-
-  const handleExport = () => {
-    if (projectData) {
-      exportProjectDataAsJson(projectData)
-    }
-  }
-
-  const handleClear = () => {
-    clearProjectData()
-    setError(null)
   }
 
   if (!projectData) {
@@ -98,45 +91,39 @@ export default function Home() {
     )
   }
 
-  const systemCount = projectData.systems.length
-  const openIssueCount = projectData.systems.reduce(
-    (sum, s) => sum + s.issues.filter((i) => i.status !== 'closed').length,
-    0,
-  )
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl">{projectData.projectName}</CardTitle>
-          <CardDescription>
-            Week: {projectData.currentWeek} / 最終更新:{' '}
-            {new Date(projectData.lastUpdated).toLocaleDateString('ja-JP')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-lg bg-blue-50 p-4 text-center">
-              <p className="text-3xl font-bold text-blue-600">{systemCount}</p>
-              <p className="text-sm text-zinc-600">システム数</p>
-            </div>
-            <div className="rounded-lg bg-amber-50 p-4 text-center">
-              <p className="text-3xl font-bold text-amber-600">{openIssueCount}</p>
-              <p className="text-sm text-zinc-600">オープンIssue</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={handleExport} variant="outline" className="flex-1">
-              <Upload className="mr-2 h-4 w-4" />
-              データをエクスポート
-            </Button>
-            <Button onClick={handleClear} variant="destructive" className="flex-1">
-              <Trash2 className="mr-2 h-4 w-4" />
-              データをクリア
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <AppShell>
+      <MainContent />
+      <SystemDetailSheet />
+    </AppShell>
   )
+}
+
+function MainContent() {
+  const activeView = useActiveView()
+
+  switch (activeView) {
+    case 'dashboard':
+      return <DashboardTabs />
+    case 'system':
+      return (
+        <div className="flex items-center justify-center py-20 text-zinc-400">
+          システム管理 — 準備中
+        </div>
+      )
+    case 'history':
+      return (
+        <div className="flex items-center justify-center py-20 text-zinc-400">
+          履歴 — 準備中
+        </div>
+      )
+    case 'settings':
+      return (
+        <div className="flex items-center justify-center py-20 text-zinc-400">
+          設定 — 準備中
+        </div>
+      )
+    default:
+      return <DashboardTabs />
+  }
 }
