@@ -18,6 +18,7 @@ import { DashboardTabs } from '@/components/dashboard/dashboard-tabs'
 import { SystemDetailSheet } from '@/components/system/system-detail-sheet'
 import { SystemListView } from '@/components/system/system-list-view'
 import { HistoryTabs } from '@/components/history/history-tabs'
+import { SettingsView } from '@/components/settings/settings-view'
 import { useActiveView } from '@/hooks/use-project'
 
 export default function Home() {
@@ -112,11 +113,7 @@ function MainContent() {
     case 'history':
       return <HistoryTabs />
     case 'settings':
-      return (
-        <div className="flex items-center justify-center py-20 text-zinc-400">
-          設定 — 準備中
-        </div>
-      )
+      return <SettingsView />
     default:
       return <DashboardTabs />
   }

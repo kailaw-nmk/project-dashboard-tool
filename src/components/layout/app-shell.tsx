@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/footer'
 import { useProjectData } from '@/hooks/use-project'
 import { useProjectStore } from '@/stores/project-store'
 import { importProjectData } from '@/lib/import'
-import { exportProjectDataAsJson } from '@/lib/export'
+import { exportProjectDataAsJson, exportSummaryAsPng } from '@/lib/export'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -34,9 +34,18 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
+  const handleExportPng = async () => {
+    if (!projectData) return
+    try {
+      await exportSummaryAsPng('summary-view', projectData.projectName)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PNGエクスポートに失敗しました。')
+    }
+  }
+
   return (
     <div className="flex h-screen flex-col">
-      <Header projectData={projectData} onImport={handleImport} onExport={handleExport} />
+      <Header projectData={projectData} onImport={handleImport} onExport={handleExport} onExportPng={handleExportPng} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex flex-1 flex-col overflow-auto bg-zinc-50 p-6">

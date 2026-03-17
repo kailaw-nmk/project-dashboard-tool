@@ -15,9 +15,10 @@ interface HeaderProps {
   projectData: ProjectData | null
   onImport: (file: File) => void
   onExport: () => void
+  onExportPng?: () => void
 }
 
-export function Header({ projectData, onImport, onExport }: HeaderProps) {
+export function Header({ projectData, onImport, onExport, onExportPng }: HeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,12 +73,17 @@ export function Header({ projectData, onImport, onExport }: HeaderProps) {
           <Tooltip>
             <TooltipTrigger
               render={
-                <Button variant="ghost" size="icon" disabled />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onExportPng}
+                  disabled={!projectData || !onExportPng}
+                />
               }
             >
               <Image className="h-4 w-4" />
             </TooltipTrigger>
-            <TooltipContent>PNGエクスポート（準備中）</TooltipContent>
+            <TooltipContent>PNGエクスポート（サマリービュー）</TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <input

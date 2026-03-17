@@ -17,7 +17,7 @@ export function SummaryView() {
   if (!settings) return null
 
   return (
-    <div className="flex flex-col gap-6">
+    <div id="summary-view" className="flex flex-col gap-6">
       <StatusSummary systems={systems} statusOptions={settings.statusOptions} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {systems.map((system) => (
