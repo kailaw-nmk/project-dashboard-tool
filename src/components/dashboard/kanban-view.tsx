@@ -1,11 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { IssueCard, KeyItemCard } from '@/components/dashboard/kanban-card'
+import { IssueFormDialog } from '@/components/system/issue-form-dialog'
+import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import type { System, Issue, KeyItem } from '@/types/schema'
 
 type KanbanItem =
@@ -40,32 +49,72 @@ const statusSectionLabels: Record<string, string> = {
   closed: '完了',
 }
 
+type AddItemType = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+
 function SystemColumn({ system, statusOption, onClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
 }) {
   const [closedOpen, setClosedOpen] = useState(false)
+  const [issueFormOpen, setIssueFormOpen] = useState(false)
+  const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
+  const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
   const groups = groupByStatus(system)
   const hasItems = system.issues.length > 0 || system.keyItems.length > 0
+
+  const handleAddItem = (type: AddItemType) => {
+    if (type === 'issue') {
+      setIssueFormOpen(true)
+    } else {
+      setKeyItemDefaultType(type)
+      setKeyItemFormOpen(true)
+    }
+  }
 
   return (
     <div className="flex flex-col w-[290px] min-w-[290px] bg-zinc-50 rounded-lg border">
       {/* Column header */}
-      <div
-        className="flex items-center justify-between p-3 border-b cursor-pointer hover:bg-zinc-100"
-        onClick={onClick}
-      >
-        <span className="font-medium text-sm truncate">{system.name}</span>
-        {statusOption && (
-          <Badge
-            variant="outline"
-            className="border-transparent text-xs shrink-0 ml-2"
-            style={{ backgroundColor: statusOption.color + '20', color: statusOption.color }}
+      <div className="flex items-center justify-between p-3 border-b">
+        <div
+          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-70"
+          onClick={onClick}
+        >
+          <span className="font-medium text-sm truncate">{system.name}</span>
+          {statusOption && (
+            <Badge
+              variant="outline"
+              className="border-transparent text-xs shrink-0"
+              style={{ backgroundColor: statusOption.color + '20', color: statusOption.color }}
+            >
+              {statusOption.label}
+            </Badge>
+          )}
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" />}
           >
-            {statusOption.label}
-          </Badge>
-        )}
+            <Plus className="h-3.5 w-3.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleAddItem('issue')}>
+              Issue
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('milestone')}>
+              マイルストーン
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('risk')}>
+              リスク
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('decision')}>
+              決定事項
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('dependency')}>
+              依存関係
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Items */}
@@ -130,6 +179,19 @@ function SystemColumn({ system, statusOption, onClick }: {
           </div>
         )}
       </div>
+
+      {/* Form dialogs */}
+      <IssueFormDialog
+        open={issueFormOpen}
+        onOpenChange={setIssueFormOpen}
+        systemId={system.id}
+      />
+      <KeyItemFormDialog
+        open={keyItemFormOpen}
+        onOpenChange={setKeyItemFormOpen}
+        systemId={system.id}
+        defaultType={keyItemDefaultType}
+      />
     </div>
   )
 }

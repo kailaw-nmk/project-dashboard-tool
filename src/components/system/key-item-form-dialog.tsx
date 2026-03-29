@@ -31,6 +31,7 @@ interface KeyItemFormDialogProps {
   onOpenChange: (open: boolean) => void
   systemId: string
   editData?: KeyItem | null
+  defaultType?: 'milestone' | 'risk' | 'decision' | 'dependency'
 }
 
 const typeOptions = [
@@ -51,6 +52,7 @@ export function KeyItemFormDialog({
   onOpenChange,
   systemId,
   editData,
+  defaultType = 'milestone',
 }: KeyItemFormDialogProps) {
   const { addKeyItem, updateKeyItem } = useProjectStore(
     useShallow((s) => ({ addKeyItem: s.addKeyItem, updateKeyItem: s.updateKeyItem })),
@@ -79,7 +81,7 @@ export function KeyItemFormDialog({
               status: editData.status,
             }
           : {
-              type: 'milestone',
+              type: defaultType,
               title: '',
               description: '',
               dueDate: '',
@@ -87,7 +89,7 @@ export function KeyItemFormDialog({
             },
       )
     }
-  }, [open, editData, reset])
+  }, [open, editData, defaultType, reset])
 
   const onSubmit = (data: KeyItemFormData) => {
     if (isEdit) {
