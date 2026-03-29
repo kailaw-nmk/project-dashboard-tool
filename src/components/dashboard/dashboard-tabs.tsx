@@ -25,7 +25,7 @@ export function DashboardTabs() {
         </TabsTrigger>
         <TabsTrigger value="kanban">
           <Columns3 className="h-4 w-4" />
-          看板
+          カンバン
         </TabsTrigger>
       </TabsList>
       <TabsContent value="summary">

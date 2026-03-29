@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Plus } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import { Badge } from '@/components/ui/badge'
@@ -17,15 +17,34 @@ import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import type { System, Issue, KeyItem } from '@/types/schema'
 
+type ItemCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+
+const categoryLabels: Record<ItemCategory, string> = {
+  issue: 'Issue',
+  milestone: 'マイルストーン',
+  risk: 'リスク',
+  decision: '決定事項',
+  dependency: '依存関係',
+}
+
 type KanbanItem =
   | { kind: 'issue'; data: Issue }
   | { kind: 'keyItem'; data: KeyItem }
 
-function groupByStatus(system: System) {
-  const items: KanbanItem[] = [
+function getItemCategory(item: KanbanItem): ItemCategory {
+  if (item.kind === 'issue') return 'issue'
+  return item.data.type
+}
+
+function groupByStatus(system: System, activeFilters: Set<ItemCategory>) {
+  const allItems: KanbanItem[] = [
     ...system.issues.map((i) => ({ kind: 'issue' as const, data: i })),
     ...system.keyItems.map((k) => ({ kind: 'keyItem' as const, data: k })),
   ]
+
+  const items = activeFilters.size === 0
+    ? allItems
+    : allItems.filter((item) => activeFilters.has(getItemCategory(item)))
 
   const groups: Record<string, KanbanItem[]> = {
     open: [],
@@ -51,17 +70,18 @@ const statusSectionLabels: Record<string, string> = {
 
 type AddItemType = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
 
-function SystemColumn({ system, statusOption, onClick }: {
+function SystemColumn({ system, statusOption, onClick, activeFilters }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
+  activeFilters: Set<ItemCategory>
 }) {
   const [closedOpen, setClosedOpen] = useState(false)
   const [issueFormOpen, setIssueFormOpen] = useState(false)
   const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
   const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
-  const groups = groupByStatus(system)
-  const hasItems = system.issues.length > 0 || system.keyItems.length > 0
+  const groups = groupByStatus(system, activeFilters)
+  const hasItems = groups.open.length > 0 || groups['in-progress'].length > 0 || groups.closed.length > 0
 
   const handleAddItem = (type: AddItemType) => {
     if (type === 'issue') {
@@ -196,6 +216,8 @@ function SystemColumn({ system, statusOption, onClick }: {
   )
 }
 
+const allCategories: ItemCategory[] = ['issue', 'milestone', 'risk', 'decision', 'dependency']
+
 export function KanbanView() {
   const { systems, settings } = useProjectStore(
     useShallow((s) => ({
@@ -204,20 +226,66 @@ export function KanbanView() {
     })),
   )
   const setSelectedSystemId = useProjectStore((s) => s.setSelectedSystemId)
+  const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
+
+  const toggleFilter = (category: ItemCategory) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev)
+      if (next.has(category)) {
+        next.delete(category)
+      } else {
+        next.add(category)
+      }
+      return next
+    })
+  }
 
   if (!settings) return null
 
   return (
-    <div className="overflow-x-auto pb-4">
-      <div className="flex gap-3 min-w-min">
-        {systems.map((system) => (
-          <SystemColumn
-            key={system.id}
-            system={system}
-            statusOption={settings.statusOptions.find((o) => o.id === system.status)}
-            onClick={() => setSelectedSystemId(system.id)}
-          />
-        ))}
+    <div className="flex flex-col gap-3">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="h-4 w-4 text-zinc-400" />
+        {allCategories.map((cat) => {
+          const isActive = activeFilters.has(cat)
+          return (
+            <Button
+              key={cat}
+              variant={isActive ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => toggleFilter(cat)}
+            >
+              {categoryLabels[cat]}
+            </Button>
+          )
+        })}
+        {activeFilters.size > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-zinc-400"
+            onClick={() => setActiveFilters(new Set())}
+          >
+            クリア
+          </Button>
+        )}
+      </div>
+
+      {/* Kanban columns */}
+      <div className="overflow-x-auto pb-4">
+        <div className="flex gap-3 min-w-min">
+          {systems.map((system) => (
+            <SystemColumn
+              key={system.id}
+              system={system}
+              statusOption={settings.statusOptions.find((o) => o.id === system.status)}
+              onClick={() => setSelectedSystemId(system.id)}
+              activeFilters={activeFilters}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
