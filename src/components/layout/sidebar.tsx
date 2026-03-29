@@ -24,7 +24,7 @@ export function Sidebar() {
   const setActiveView = useProjectStore((s) => s.setActiveView)
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r bg-white py-4">
+    <aside className="flex w-56 shrink-0 flex-col border-r bg-background py-4">
       <nav className="flex flex-1 flex-col gap-1 px-3">
         {navItems.map((item) => (
           <Button
@@ -32,8 +32,8 @@ export function Sidebar() {
             variant="ghost"
             className={`justify-start gap-2 ${
               activeView === item.view
-                ? 'bg-zinc-100 font-medium text-zinc-900'
-                : 'text-zinc-600'
+                ? 'bg-accent font-medium text-accent-foreground'
+                : 'text-muted-foreground'
             }`}
             onClick={() => setActiveView(item.view)}
           >

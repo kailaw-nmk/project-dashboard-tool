@@ -48,9 +48,9 @@ export function AppShell({ children }: AppShellProps) {
       <Header projectData={projectData} onImport={handleImport} onExport={handleExport} onExportPng={handleExportPng} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex flex-1 flex-col overflow-auto bg-zinc-50 p-6">
+        <main className="flex flex-1 flex-col overflow-auto bg-muted p-6">
           {error && (
-            <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</p>
+            <p className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>
           )}
           {children}
         </main>

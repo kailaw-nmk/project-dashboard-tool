@@ -37,7 +37,7 @@ export function SystemCard({ system, statusOption, phaseOption, onClick }: Syste
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        <div className="flex items-center gap-4 text-xs text-zinc-500">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
           {phaseOption && <span>フェーズ: {phaseOption.label}</span>}
           <span>担当: {system.owner}</span>
         </div>
@@ -50,7 +50,7 @@ export function SystemCard({ system, statusOption, phaseOption, onClick }: Syste
           )}
         </div>
         {system.comment && (
-          <p className="line-clamp-2 text-xs text-zinc-500">{system.comment}</p>
+          <p className="line-clamp-2 text-xs text-muted-foreground">{system.comment}</p>
         )}
       </CardContent>
     </Card>

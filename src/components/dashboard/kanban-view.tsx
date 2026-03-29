@@ -93,7 +93,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
   }
 
   return (
-    <div className="flex flex-col w-[290px] min-w-[290px] bg-zinc-50 rounded-lg border">
+    <div className="flex flex-col w-[290px] min-w-[290px] bg-muted rounded-lg border">
       {/* Column header */}
       <div className="flex items-center justify-between p-3 border-b">
         <div
@@ -140,7 +140,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
       {/* Items */}
       <div className="flex-1 overflow-y-auto p-2 space-y-3" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         {!hasItems && (
-          <p className="text-xs text-zinc-400 text-center py-4">アイテムなし</p>
+          <p className="text-xs text-muted-foreground text-center py-4">アイテムなし</p>
         )}
 
         {(['open', 'in-progress'] as const).map((status) => {
@@ -149,10 +149,10 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
           return (
             <div key={status}>
               <div className="flex items-center gap-1.5 mb-1.5 px-1">
-                <span className="text-[11px] font-medium text-zinc-500">
+                <span className="text-[11px] font-medium text-muted-foreground">
                   {statusSectionLabels[status]}
                 </span>
-                <span className="text-[11px] text-zinc-400">{items.length}</span>
+                <span className="text-[11px] text-muted-foreground">{items.length}</span>
               </div>
               <div className="space-y-1.5">
                 {items.map((item) =>
@@ -171,7 +171,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
         {groups.closed.length > 0 && (
           <div>
             <button
-              className="flex items-center gap-1 px-1 mb-1.5 text-[11px] font-medium text-zinc-400 hover:text-zinc-600"
+              className="flex items-center gap-1 px-1 mb-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation()
                 setClosedOpen(!closedOpen)
@@ -183,7 +183,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
                 <ChevronRight className="h-3 w-3" />
               )}
               {statusSectionLabels.closed}
-              <span className="text-zinc-400">{groups.closed.length}</span>
+              <span className="text-muted-foreground">{groups.closed.length}</span>
             </button>
             {closedOpen && (
               <div className="space-y-1.5">
@@ -246,7 +246,7 @@ export function KanbanView() {
     <div className="flex flex-col gap-3">
       {/* Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="h-4 w-4 text-zinc-400" />
+        <Filter className="h-4 w-4 text-muted-foreground" />
         {allCategories.map((cat) => {
           const isActive = activeFilters.has(cat)
           return (
@@ -265,7 +265,7 @@ export function KanbanView() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-zinc-400"
+            className="h-7 text-xs text-muted-foreground"
             onClick={() => setActiveFilters(new Set())}
           >
             クリア

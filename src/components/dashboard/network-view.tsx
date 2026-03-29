@@ -40,12 +40,12 @@ const SystemNode = memo(function SystemNode({ data }: NodeProps<Node<SystemNodeD
 
   return (
     <div
-      className="rounded-lg border-2 bg-white px-4 py-3 shadow-sm"
+      className="rounded-lg border-2 bg-card px-4 py-3 shadow-sm"
       style={{ borderColor }}
     >
       <Handle type="target" position={Position.Left} className="!bg-zinc-400" />
       <div className="text-sm font-medium">{data.label}</div>
-      <div className="text-xs text-zinc-500">{data.phase}</div>
+      <div className="text-xs text-muted-foreground">{data.phase}</div>
       <Handle type="source" position={Position.Right} className="!bg-zinc-400" />
     </div>
   )
@@ -121,7 +121,7 @@ export function NetworkView() {
   )
 
   return (
-    <div className="h-[600px] w-full rounded-lg border bg-white">
+    <div className="h-[600px] w-full rounded-lg border bg-background">
       <ReactFlow
         nodes={nodes}
         edges={edges}

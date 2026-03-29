@@ -23,7 +23,7 @@ export function TableView() {
   if (!settings) return null
 
   return (
-    <div className="rounded-lg border bg-white">
+    <div className="rounded-lg border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

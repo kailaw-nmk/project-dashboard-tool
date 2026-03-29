@@ -183,13 +183,13 @@ export function SystemDetailSheet() {
               <section>
                 <h3 className="mb-2 text-sm font-medium">基本情報</h3>
                 <dl className="grid grid-cols-2 gap-2 text-sm">
-                  <dt className="text-zinc-500">フェーズ</dt>
+                  <dt className="text-muted-foreground">フェーズ</dt>
                   <dd>{phaseOption?.label ?? selectedSystem?.phase}</dd>
-                  <dt className="text-zinc-500">担当者</dt>
+                  <dt className="text-muted-foreground">担当者</dt>
                   <dd>{selectedSystem?.owner}</dd>
                 </dl>
                 {selectedSystem?.comment && (
-                  <p className="mt-2 text-sm text-zinc-600">{selectedSystem.comment}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{selectedSystem.comment}</p>
                 )}
               </section>
 
@@ -224,7 +224,7 @@ export function SystemDetailSheet() {
                           {getSystemName(dep.sourceSystemId)} →{' '}
                           {getSystemName(dep.targetSystemId)}
                           {dep.label && (
-                            <span className="text-zinc-400"> ({dep.label})</span>
+                            <span className="text-muted-foreground"> ({dep.label})</span>
                           )}
                         </span>
                         <Button
@@ -280,7 +280,7 @@ export function SystemDetailSheet() {
                     {sortedIssues.map((issue) => (
                       <li
                         key={issue.id}
-                        className="flex cursor-pointer items-start justify-between rounded border p-2 transition-colors hover:bg-zinc-50"
+                        className="flex cursor-pointer items-start justify-between rounded border p-2 transition-colors hover:bg-accent"
                         onClick={() => {
                           setEditingIssue(issue)
                           setIssueFormOpen(true)
@@ -288,7 +288,7 @@ export function SystemDetailSheet() {
                       >
                         <div className="flex-1">
                           <p className="font-medium">{issue.title}</p>
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-muted-foreground">
                             {priorityLabel[issue.priority] ?? issue.priority} /{' '}
                             {issueStatusLabel[issue.status] ?? issue.status}
                           </p>
@@ -349,14 +349,14 @@ export function SystemDetailSheet() {
                 </div>
                 {Object.entries(keyItemsByType).map(([type, items]) => (
                   <div key={type} className="mb-3">
-                    <h4 className="mb-1 text-xs font-medium text-zinc-500">
+                    <h4 className="mb-1 text-xs font-medium text-muted-foreground">
                       {keyItemTypeLabel[type] ?? type}
                     </h4>
                     <ul className="flex flex-col gap-1 text-sm">
                       {items.map((item) => (
                         <li
                           key={item.id}
-                          className="flex cursor-pointer items-center justify-between rounded border p-2 transition-colors hover:bg-zinc-50"
+                          className="flex cursor-pointer items-center justify-between rounded border p-2 transition-colors hover:bg-accent"
                           onClick={() => {
                             setEditingKeyItem(item)
                             setKeyItemFormOpen(true)

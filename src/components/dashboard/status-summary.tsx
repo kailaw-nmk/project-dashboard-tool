@@ -15,14 +15,14 @@ export function StatusSummary({ systems, statusOptions }: StatusSummaryProps) {
         return (
           <div
             key={opt.id}
-            className="rounded-lg border bg-white p-4 text-center"
+            className="rounded-lg border bg-card p-4 text-center"
           >
             <div className="mb-1 flex items-center justify-center gap-2">
               <span
                 className="inline-block h-3 w-3 rounded-full"
                 style={{ backgroundColor: opt.color }}
               />
-              <span className="text-sm text-zinc-600">{opt.label}</span>
+              <span className="text-sm text-muted-foreground">{opt.label}</span>
             </div>
             <p className="text-3xl font-bold">{count}</p>
           </div>
