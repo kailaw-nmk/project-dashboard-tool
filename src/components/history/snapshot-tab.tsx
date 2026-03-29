@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import { createSnapshot } from '@/lib/snapshot'
+import { formatWeekLabel } from '@/lib/week'
 
 export function SnapshotTab() {
   const { currentWeek, systems, snapshots, settings, saveSnapshot } = useProjectStore(
@@ -62,7 +63,7 @@ export function SnapshotTab() {
             <Camera className="h-4 w-4" />
             今週の状況を記録
             <Badge variant="outline" className="ml-2">
-              {currentWeek}
+              {formatWeekLabel(currentWeek)}
             </Badge>
             {existingSnapshot && (
               <Badge variant="secondary" className="text-xs">
@@ -105,7 +106,7 @@ export function SnapshotTab() {
           <TableBody>
             {sortedSnapshots.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-zinc-400">
+                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
                   スナップショットがありません
                 </TableCell>
               </TableRow>
@@ -114,8 +115,8 @@ export function SnapshotTab() {
                 const counts = getStatusCounts(snap.systems)
                 return (
                   <TableRow key={snap.week}>
-                    <TableCell className="font-medium">{snap.week}</TableCell>
-                    <TableCell className="text-zinc-500">
+                    <TableCell className="font-medium">{formatWeekLabel(snap.week)}</TableCell>
+                    <TableCell className="text-muted-foreground">
                       {new Date(snap.date).toLocaleDateString('ja-JP')}
                     </TableCell>
                     <TableCell>
@@ -135,7 +136,7 @@ export function SnapshotTab() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate text-sm text-zinc-600">
+                    <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
                       {snap.summary || '—'}
                     </TableCell>
                   </TableRow>

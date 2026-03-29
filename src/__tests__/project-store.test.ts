@@ -84,7 +84,13 @@ describe('ProjectStore', () => {
     it('データを設定できる', () => {
       const data = makeSampleData()
       useProjectStore.getState().setProjectData(data)
-      expect(useProjectStore.getState().projectData).toEqual(data)
+      const stored = useProjectStore.getState().projectData
+      expect(stored).not.toBeNull()
+      // currentWeek は自動設定されるため、それ以外のフィールドで比較
+      expect(stored!.projectName).toEqual(data.projectName)
+      expect(stored!.systems).toEqual(data.systems)
+      expect(stored!.settings).toEqual(data.settings)
+      expect(stored!.currentWeek).toBeTruthy()
     })
 
     it('データをクリアできる', () => {

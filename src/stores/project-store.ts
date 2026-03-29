@@ -9,6 +9,7 @@ import type {
   Dependency,
   WeeklySnapshot,
 } from '@/types/schema'
+import { getCurrentWeek } from '@/lib/week'
 
 export type ActiveView = 'dashboard' | 'system' | 'history' | 'settings'
 
@@ -72,7 +73,7 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   selectedSystemId: null,
   activeView: 'dashboard',
 
-  setProjectData: (data) => set({ projectData: data }),
+  setProjectData: (data) => set({ projectData: { ...data, currentWeek: getCurrentWeek() } }),
   clearProjectData: () => set({ projectData: null, selectedSystemId: null }),
 
   // System CRUD

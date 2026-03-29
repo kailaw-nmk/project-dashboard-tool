@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Plus, Trash2, GripVertical } from 'lucide-react'
+import { Save, Plus, Trash2, GripVertical, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import type { StatusOption, PhaseOption, KeyItemType } from '@/types/schema'
+import { getCurrentWeek } from '@/lib/week'
 
 export function SettingsView() {
   const { projectData, setProjectData } = useProjectStore(
@@ -136,13 +137,23 @@ export function SettingsView() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">現在の週</label>
-            <Input
-              value={currentWeek}
-              onChange={(e) => setCurrentWeek(e.target.value)}
-              placeholder="例: 2026-W12"
-              className="max-w-xs"
-            />
+            <label className="mb-1 block text-sm font-medium">現在の週（金曜日の日付）</label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={currentWeek}
+                onChange={(e) => setCurrentWeek(e.target.value)}
+                placeholder="例: 2026/03/27"
+                className="max-w-xs"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentWeek(getCurrentWeek())}
+              >
+                <RefreshCw className="mr-1 h-3 w-3" />
+                今週を取得
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -238,7 +249,7 @@ export function SettingsView() {
                     <GripVertical className="h-3 w-3 -rotate-90" />
                   </Button>
                 </div>
-                <span className="w-6 text-center text-xs text-zinc-400">{opt.order}</span>
+                <span className="w-6 text-center text-xs text-muted-foreground">{opt.order}</span>
                 <Input
                   value={opt.label}
                   onChange={(e) => updatePhase(i, { label: e.target.value })}
@@ -299,7 +310,7 @@ export function SettingsView() {
       </Card>
 
       <Separator />
-      <p className="text-xs text-zinc-400">
+      <p className="text-xs text-muted-foreground">
         設定の変更は「保存」ボタンを押すまで反映されません。
       </p>
     </div>

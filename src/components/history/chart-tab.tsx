@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
+import { formatWeekLabel } from '@/lib/week'
 
 export function ChartTab() {
   const { snapshots, settings } = useProjectStore(
@@ -29,7 +30,7 @@ export function ChartTab() {
 
   if (sortedSnapshots.length < 2) {
     return (
-      <div className="flex items-center justify-center py-20 text-zinc-400">
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
         推移グラフを表示するには2件以上のスナップショットが必要です。
       </div>
     )
@@ -44,12 +45,12 @@ export function ChartTab() {
     snap.systems.forEach((s) => {
       counts[s.status] = (counts[s.status] ?? 0) + 1
     })
-    return { week: snap.week, ...counts }
+    return { week: formatWeekLabel(snap.week), ...counts }
   })
 
   // Issue推移データ
   const issueChartData = sortedSnapshots.map((snap) => ({
-    week: snap.week,
+    week: formatWeekLabel(snap.week),
     openIssues: snap.systems.reduce((sum, s) => sum + s.openIssues, 0),
     openRisks: snap.systems.reduce((sum, s) => sum + s.openRisks, 0),
   }))
