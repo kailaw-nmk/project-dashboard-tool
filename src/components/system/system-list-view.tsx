@@ -19,6 +19,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import { SystemFormDialog } from './system-form-dialog'
@@ -32,10 +39,11 @@ export function SystemListView() {
       settings: s.projectData?.settings,
     })),
   )
-  const { setSelectedSystemId, deleteSystem } = useProjectStore(
+  const { setSelectedSystemId, deleteSystem, updateSystem } = useProjectStore(
     useShallow((s) => ({
       setSelectedSystemId: s.setSelectedSystemId,
       deleteSystem: s.deleteSystem,
+      updateSystem: s.updateSystem,
     })),
   )
 
@@ -93,19 +101,38 @@ export function SystemListView() {
                     onClick={() => setSelectedSystemId(system.id)}
                   >
                     <TableCell className="font-medium">{system.name}</TableCell>
-                    <TableCell>
-                      {statusOpt && (
-                        <Badge
-                          variant="outline"
-                          className="border-transparent"
-                          style={{
-                            backgroundColor: statusOpt.color + '20',
-                            color: statusOpt.color,
-                          }}
-                        >
-                          {statusOpt.label}
-                        </Badge>
-                      )}
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={system.status}
+                        onValueChange={(value) => { if (value) updateSystem(system.id, { status: value }) }}
+                      >
+                        <SelectTrigger className="h-7 w-auto min-w-[100px] border-none bg-transparent px-2">
+                          {statusOpt ? (
+                            <span className="flex items-center gap-1.5">
+                              <span
+                                className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: statusOpt.color }}
+                              />
+                              {statusOpt.label}
+                            </span>
+                          ) : (
+                            <SelectValue />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {settings?.statusOptions.map((opt) => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              <span className="flex items-center gap-1.5">
+                                <span
+                                  className="inline-block h-2.5 w-2.5 rounded-full"
+                                  style={{ backgroundColor: opt.color }}
+                                />
+                                {opt.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>{getPhaseLabel(system.phase)}</TableCell>
                     <TableCell className="text-center">

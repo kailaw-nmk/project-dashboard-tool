@@ -80,6 +80,8 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
   const [issueFormOpen, setIssueFormOpen] = useState(false)
   const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
   const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
+  const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
+  const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
   const groups = groupByStatus(system, activeFilters)
   const hasItems = groups.open.length > 0 || groups['in-progress'].length > 0 || groups.closed.length > 0
 
@@ -157,9 +159,9 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
               <div className="space-y-1.5">
                 {items.map((item) =>
                   item.kind === 'issue' ? (
-                    <IssueCard key={item.data.id} issue={item.data} onClick={onClick} />
+                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} />
                   ) : (
-                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={onClick} />
+                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} />
                   ),
                 )}
               </div>
@@ -189,9 +191,9 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
               <div className="space-y-1.5">
                 {groups.closed.map((item) =>
                   item.kind === 'issue' ? (
-                    <IssueCard key={item.data.id} issue={item.data} onClick={onClick} />
+                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} />
                   ) : (
-                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={onClick} />
+                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} />
                   ),
                 )}
               </div>
@@ -203,13 +205,15 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
       {/* Form dialogs */}
       <IssueFormDialog
         open={issueFormOpen}
-        onOpenChange={setIssueFormOpen}
+        onOpenChange={(open) => { setIssueFormOpen(open); if (!open) setEditingIssue(null) }}
         systemId={system.id}
+        editData={editingIssue}
       />
       <KeyItemFormDialog
         open={keyItemFormOpen}
-        onOpenChange={setKeyItemFormOpen}
+        onOpenChange={(open) => { setKeyItemFormOpen(open); if (!open) setEditingKeyItem(null) }}
         systemId={system.id}
+        editData={editingKeyItem}
         defaultType={keyItemDefaultType}
       />
     </div>

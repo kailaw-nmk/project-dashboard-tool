@@ -40,6 +40,11 @@ export function Header({ projectData, onImport, onExport, onExportPng }: HeaderP
         <span className="text-lg font-semibold">
           {projectData ? projectData.projectName : 'Project Dashboard'}
         </span>
+        {projectData && (
+          <span className="text-sm text-muted-foreground">
+            {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-1">
         <TooltipProvider>
