@@ -1,8 +1,6 @@
 'use client'
 
 import { ExternalLink, Flame, StickyNote } from 'lucide-react'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { getCurrentWeek } from '@/lib/week'
 import type { Issue, KeyItem } from '@/types/schema'
 
@@ -14,16 +12,16 @@ function isOverdue(dueDate: string | undefined, status: string): boolean {
   return due < today
 }
 
-const statusStyles: Record<string, { text: string; label: string }> = {
-  open: { text: 'text-blue-600 dark:text-blue-400', label: '未対応' },
-  'in-progress': { text: 'text-amber-600 dark:text-amber-400', label: '対応中' },
-  closed: { text: 'text-green-600 dark:text-green-400', label: '完了' },
+const statusLabels: Record<string, { color: string; darkColor: string; label: string }> = {
+  open: { color: '#2563eb', darkColor: '#60a5fa', label: '未対応' },
+  'in-progress': { color: '#d97706', darkColor: '#fbbf24', label: '対応中' },
+  closed: { color: '#16a34a', darkColor: '#4ade80', label: '完了' },
 }
 
-const priorityStyles: Record<string, { bg: string; text: string; label: string }> = {
-  high: { bg: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-700 dark:text-red-300', label: '高' },
-  medium: { bg: 'bg-amber-100 dark:bg-amber-900/40', text: 'text-amber-700 dark:text-amber-300', label: '中' },
-  low: { bg: 'bg-muted', text: 'text-muted-foreground', label: '低' },
+const priorityConfig: Record<string, { color: string; label: string }> = {
+  high: { color: '#dc2626', label: '高' },
+  medium: { color: '#d97706', label: '中' },
+  low: { color: '#6b7280', label: '低' },
 }
 
 const priorityCardStyle: Record<string, React.CSSProperties> = {
@@ -39,15 +37,58 @@ const keyItemTypeLabels: Record<string, string> = {
   dependency: '依存関係',
 }
 
+const keyItemTypeColors: Record<string, string> = {
+  milestone: '#9333ea',
+  risk: '#dc2626',
+  decision: '#059669',
+  dependency: '#ea580c',
+}
+
+/** インラインタグ */
+function Tag({ label, borderColor, textColor }: { label: string; borderColor: string; textColor: string }) {
+  return (
+    <span
+      style={{
+        fontSize: '0.75em',
+        lineHeight: 1,
+        padding: '0.15em 0.4em',
+        border: `1px solid ${borderColor}`,
+        borderRadius: '0.25em',
+        color: textColor,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  )
+}
+
 function UpdateIcon({ hasUpdate, onClick }: { hasUpdate: boolean; onClick: (e: React.MouseEvent) => void }) {
   return (
     <button
-      className={`p-0.5 rounded hover:bg-accent ${hasUpdate ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
+      style={{ padding: 2, borderRadius: 3, display: 'flex', alignItems: 'center' }}
+      className={`hover:bg-accent ${hasUpdate ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
       onClick={onClick}
       title="週次アップデート"
     >
-      <StickyNote style={{ width: '1em', height: '1em' }} />
+      <StickyNote style={{ width: '1.1em', height: '1.1em' }} />
     </button>
+  )
+}
+
+function LinkIcon({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ padding: 2, borderRadius: 3, display: 'flex', alignItems: 'center' }}
+      className="hover:bg-accent text-blue-500 dark:text-blue-400 hover:text-blue-600"
+      onClick={(e) => e.stopPropagation()}
+      title={href}
+    >
+      <ExternalLink style={{ width: '1.1em', height: '1.1em' }} />
+    </a>
   )
 }
 
@@ -61,56 +102,54 @@ interface IssueCardProps {
 }
 
 export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: IssueCardProps) {
-  const status = statusStyles[issue.status]
-  const priority = priorityStyles[issue.priority]
-  const cardStyle = priorityCardStyle[issue.priority] ?? {}
+  const statusInfo = statusLabels[issue.status]
+  const priorityInfo = priorityConfig[issue.priority]
+  const cardBg = priorityCardStyle[issue.priority] ?? {}
   const hasUpdate = (issue.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
   const overdue = isOverdue(issue.dueDate, issue.status)
 
+  const ringClass = linkSelected
+    ? 'ring-2 ring-emerald-500'
+    : linkMode
+      ? 'ring-2 ring-blue-400/50 hover:ring-blue-500'
+      : ''
+
   return (
-    <Card
-      className={`cursor-pointer p-3 transition-shadow hover:shadow-md ${linkMode ? 'ring-2 ring-blue-400/50 hover:ring-blue-500' : ''} ${linkSelected ? 'ring-2 ring-emerald-500' : ''}`}
-      style={cardStyle}
+    <div
+      className={`cursor-pointer rounded-lg bg-card ring-1 ring-foreground/10 p-2.5 transition-shadow hover:shadow-md ${ringClass}`}
+      style={{ ...cardBg, fontSize: 'inherit' }}
       onClick={linkMode ? onLinkClick : onClick}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <Badge variant="outline" style={{ fontSize: '0.7em', padding: '0 0.4em' }} className="border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
-            Issue
-          </Badge>
-          {priority && (
-            <Badge style={{ fontSize: '0.7em', padding: '0 0.4em' }} className={`${priority.bg} ${priority.text} border-transparent`}>
-              {priority.label}
-            </Badge>
+      {/* Row 1: tags + icons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+          <Tag label="Issue" borderColor="#93c5fd" textColor="#2563eb" />
+          {priorityInfo && (
+            <Tag label={priorityInfo.label} borderColor={priorityInfo.color} textColor={priorityInfo.color} />
           )}
         </div>
-        <div className="flex items-center gap-1">
-          {!linkMode && issue.externalLink && (
-            <a
-              href={issue.externalLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-0.5 rounded hover:bg-accent text-muted-foreground/60 hover:text-blue-500"
-              onClick={(e) => e.stopPropagation()}
-              title={issue.externalLink}
-            >
-              <ExternalLink style={{ width: '1em', height: '1em' }} />
-            </a>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.15em' }}>
+          {!linkMode && issue.externalLink && <LinkIcon href={issue.externalLink} />}
           {!linkMode && onUpdateClick && (
             <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
           )}
         </div>
       </div>
-      <p style={{ fontSize: '0.9em' }} className="font-medium leading-tight mb-1.5 line-clamp-2">{issue.title}</p>
-      <div className="flex items-center justify-between text-muted-foreground" style={{ fontSize: '0.75em' }}>
-        <div className="flex items-center gap-1.5">
-          {status && (
-            <span className={`${status.text}`}>● {status.label}</span>
+
+      {/* Row 2: title */}
+      <p style={{ fontSize: '0.9em', fontWeight: 500, lineHeight: 1.3, marginBottom: '0.3em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {issue.title}
+      </p>
+
+      {/* Row 3: status + date + assignee */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75em' }} className="text-muted-foreground">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4em' }}>
+          {statusInfo && (
+            <span style={{ color: statusInfo.color }}>● {statusInfo.label}</span>
           )}
           {issue.dueDate && (
             overdue ? (
-              <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.2em', color: '#dc2626' }} title="期限超過">
                 <Flame style={{ width: '1em', height: '1em' }} />
                 <span>{issue.dueDate}</span>
               </span>
@@ -119,9 +158,9 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
             )
           )}
         </div>
-        {issue.assignee && <span className="truncate max-w-[100px]">{issue.assignee}</span>}
+        {issue.assignee && <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.assignee}</span>}
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -135,65 +174,56 @@ interface KeyItemCardProps {
 }
 
 export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: KeyItemCardProps) {
-  const status = statusStyles[keyItem.status]
+  const statusInfo = statusLabels[keyItem.status]
   const typeLabel = keyItemTypeLabels[keyItem.type] ?? keyItem.type
+  const typeColor = keyItemTypeColors[keyItem.type] ?? '#6b7280'
   const hasUpdate = (keyItem.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
   const overdue = isOverdue(keyItem.dueDate, keyItem.status)
 
-  const typeBorderColor: Record<string, string> = {
-    milestone: 'border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400',
-    risk: 'border-red-300 dark:border-red-700 text-red-600 dark:text-red-400',
-    decision: 'border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400',
-    dependency: 'border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400',
-  }
+  const ringClass = linkSelected
+    ? 'ring-2 ring-emerald-500'
+    : linkMode
+      ? 'ring-2 ring-blue-400/50 hover:ring-blue-500'
+      : ''
 
   return (
-    <Card
-      className={`cursor-pointer p-3 transition-shadow hover:shadow-md ${linkMode ? 'ring-2 ring-blue-400/50 hover:ring-blue-500' : ''} ${linkSelected ? 'ring-2 ring-emerald-500' : ''}`}
+    <div
+      className={`cursor-pointer rounded-lg bg-card ring-1 ring-foreground/10 p-2.5 transition-shadow hover:shadow-md ${ringClass}`}
+      style={{ fontSize: 'inherit' }}
       onClick={linkMode ? onLinkClick : onClick}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <Badge
-            variant="outline"
-            style={{ fontSize: '0.7em', padding: '0 0.4em' }}
-            className={`${typeBorderColor[keyItem.type] ?? 'border-border text-muted-foreground'}`}
-          >
-            {typeLabel}
-          </Badge>
+      {/* Row 1: tags + icons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+          <Tag label={typeLabel} borderColor={typeColor} textColor={typeColor} />
         </div>
-        <div className="flex items-center gap-1">
-          {!linkMode && keyItem.externalLink && (
-            <a
-              href={keyItem.externalLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-0.5 rounded hover:bg-accent text-muted-foreground/60 hover:text-blue-500"
-              onClick={(e) => e.stopPropagation()}
-              title={keyItem.externalLink}
-            >
-              <ExternalLink style={{ width: '1em', height: '1em' }} />
-            </a>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.15em' }}>
+          {!linkMode && keyItem.externalLink && <LinkIcon href={keyItem.externalLink} />}
           {!linkMode && onUpdateClick && (
             <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
           )}
         </div>
       </div>
-      <p style={{ fontSize: '0.9em' }} className="font-medium leading-tight mb-1.5 line-clamp-2">{keyItem.title}</p>
-      <div className="flex items-center justify-between text-muted-foreground" style={{ fontSize: '0.75em' }}>
-        <div className="flex items-center gap-1.5">
-          {status && (
-            <span className={`${status.text}`}>● {status.label}</span>
+
+      {/* Row 2: title */}
+      <p style={{ fontSize: '0.9em', fontWeight: 500, lineHeight: 1.3, marginBottom: '0.3em', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {keyItem.title}
+      </p>
+
+      {/* Row 3: status + date */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75em' }} className="text-muted-foreground">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4em' }}>
+          {statusInfo && (
+            <span style={{ color: statusInfo.color }}>● {statusInfo.label}</span>
           )}
           {overdue && (
-            <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.2em', color: '#dc2626' }} title="期限超過">
               <Flame style={{ width: '1em', height: '1em' }} />
             </span>
           )}
         </div>
         {keyItem.dueDate && <span>{keyItem.dueDate}</span>}
       </div>
-    </Card>
+    </div>
   )
 }
