@@ -10,7 +10,8 @@ export function exportProjectDataAsJson(data: ProjectData): void {
 
   const a = document.createElement('a')
   a.href = url
-  a.download = `${data.projectName}_${data.currentWeek}.json`
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  a.download = `Dashboard_${data.projectName}_${date}.json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
