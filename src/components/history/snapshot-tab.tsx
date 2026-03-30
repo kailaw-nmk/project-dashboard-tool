@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Camera } from 'lucide-react'
+import { Camera, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -19,13 +19,14 @@ import { createSnapshot } from '@/lib/snapshot'
 import { formatWeekLabel } from '@/lib/week'
 
 export function SnapshotTab() {
-  const { currentWeek, systems, snapshots, settings, saveSnapshot } = useProjectStore(
+  const { currentWeek, systems, snapshots, settings, saveSnapshot, deleteSnapshot } = useProjectStore(
     useShallow((s) => ({
       currentWeek: s.projectData?.currentWeek ?? '',
       systems: s.projectData?.systems ?? [],
       snapshots: s.projectData?.weeklySnapshots ?? [],
       settings: s.projectData?.settings,
       saveSnapshot: s.saveSnapshot,
+      deleteSnapshot: s.deleteSnapshot,
     })),
   )
 
@@ -101,12 +102,13 @@ export function SnapshotTab() {
               <TableHead>日時</TableHead>
               <TableHead>ステータス内訳</TableHead>
               <TableHead>サマリー</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedSnapshots.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                   スナップショットがありません
                 </TableCell>
               </TableRow>
@@ -138,6 +140,16 @@ export function SnapshotTab() {
                     </TableCell>
                     <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
                       {snap.summary || '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-destructive"
+                        onClick={() => deleteSnapshot(snap.week)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 )

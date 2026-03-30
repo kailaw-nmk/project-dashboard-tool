@@ -46,6 +46,7 @@ interface ProjectState {
 
   // Snapshot
   saveSnapshot: (snapshot: WeeklySnapshot) => void
+  deleteSnapshot: (week: string) => void
 
   // UI actions
   setSelectedSystemId: (id: string | null) => void
@@ -260,6 +261,17 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         projectData: updateProjectTimestamp({
           ...state.projectData,
           weeklySnapshots,
+        }),
+      }
+    }),
+
+  deleteSnapshot: (week) =>
+    set((state) => {
+      if (!state.projectData) return state
+      return {
+        projectData: updateProjectTimestamp({
+          ...state.projectData,
+          weeklySnapshots: state.projectData.weeklySnapshots.filter((s) => s.week !== week),
         }),
       }
     }),
