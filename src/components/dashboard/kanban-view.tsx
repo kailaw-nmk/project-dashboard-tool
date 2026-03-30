@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Filter, GripVertical, Layers, Link2, Monitor, Plus } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { AArrowDown, AArrowUp, ChevronDown, ChevronRight, Filter, GripVertical, Layers, Link2, Monitor, Plus, RotateCcw } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -468,6 +468,26 @@ export function KanbanView() {
   const reorderSystems = useProjectStore((s) => s.reorderSystems)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
+  const [fontSize, setFontSize] = useState(100)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('kanban-font-size')
+    if (saved) setFontSize(Number(saved))
+  }, [])
+
+  const changeFontSize = useCallback((delta: number) => {
+    setFontSize((prev) => {
+      const next = Math.max(70, Math.min(150, prev + delta))
+      localStorage.setItem('kanban-font-size', String(next))
+      return next
+    })
+  }, [])
+
+  const resetFontSize = useCallback(() => {
+    setFontSize(100)
+    localStorage.setItem('kanban-font-size', '100')
+  }, [])
+
   const [linkMode, setLinkMode] = useState(false)
   const [linkSource, setLinkSource] = useState<LinkSourceTarget | null>(null)
   const [linkTarget, setLinkTarget] = useState<LinkSourceTarget | null>(null)
@@ -601,39 +621,60 @@ export function KanbanView() {
             </Button>
           )}
         </div>
+
+        {/* Separator */}
+        <div className="h-5 w-px bg-border" />
+
+        {/* Font size controls */}
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => changeFontSize(-10)} title="文字を小さく">
+            <AArrowDown className="h-3.5 w-3.5" />
+          </Button>
+          <span className="text-xs text-muted-foreground w-8 text-center">{fontSize}%</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => changeFontSize(10)} title="文字を大きく">
+            <AArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          {fontSize !== 100 && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={resetFontSize} title="リセット">
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
-      {selectedSystem ? (
-        /* Single system kanban: 3-column status board */
-        <SingleSystemKanban
-          key={selectedSystem.id}
-          system={selectedSystem}
-          activeFilters={activeFilters}
-        />
-      ) : (
-        /* All systems: horizontal columns with drag reorder */
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={systems.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
-            <div className="overflow-x-auto pb-4">
-              <div className="flex gap-3 min-w-min">
-                {systems.map((system) => (
-                  <SortableSystemColumn
-                    key={system.id}
-                    system={system}
-                    statusOption={settings.statusOptions.find((o) => o.id === system.status)}
-                    onClick={() => setSelectedSystemId(system.id)}
-                    linkMode={linkMode}
-                    linkSourceId={linkSource?.itemId ?? null}
-                    onLinkClick={handleLinkClick}
-                    activeFilters={activeFilters}
-                  />
-                ))}
+      <div style={{ fontSize: `${fontSize}%` }}>
+        {selectedSystem ? (
+          /* Single system kanban: 3-column status board */
+          <SingleSystemKanban
+            key={selectedSystem.id}
+            system={selectedSystem}
+            activeFilters={activeFilters}
+          />
+        ) : (
+          /* All systems: horizontal columns with drag reorder */
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={systems.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
+              <div className="overflow-x-auto pb-4">
+                <div className="flex gap-3 min-w-min">
+                  {systems.map((system) => (
+                    <SortableSystemColumn
+                      key={system.id}
+                      system={system}
+                      statusOption={settings.statusOptions.find((o) => o.id === system.status)}
+                      onClick={() => setSelectedSystemId(system.id)}
+                      linkMode={linkMode}
+                      linkSourceId={linkSource?.itemId ?? null}
+                      onLinkClick={handleLinkClick}
+                      activeFilters={activeFilters}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
 
       {/* Item link dialog */}
       {linkSource && linkTarget && (
