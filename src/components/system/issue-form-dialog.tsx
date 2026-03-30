@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { useProjectStore } from '@/stores/project-store'
 import { ItemDependenciesSection } from './item-dependencies-section'
+import { WeeklyUpdateSection } from './weekly-update-section'
 import { useShallow } from 'zustand/react/shallow'
 import { IssueFormSchema, type IssueFormData } from '@/types/form-schemas'
 import type { Issue } from '@/types/schema'
@@ -182,6 +183,14 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               <label className="mb-1 block text-sm font-medium">外部リンク</label>
               <Input {...register('externalLink')} placeholder="https://..." />
             </div>
+            {isEdit && (
+              <WeeklyUpdateSection
+                systemId={systemId}
+                itemId={editData.id}
+                itemKind="issue"
+                weeklyUpdates={editData.weeklyUpdates ?? []}
+              />
+            )}
             {isEdit && <ItemDependenciesSection itemId={editData.id} />}
           </div>
           <DialogFooter className="flex justify-between">
