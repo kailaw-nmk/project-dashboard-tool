@@ -44,6 +44,26 @@ export function getCurrentWeek(): string {
   return formatWeekDate(getFridayOfWeek())
 }
 
+import type { WeeklyUpdate } from '@/types/schema'
+
+/**
+ * 週次アップデートのupsert + 3週間ローテーション
+ * - 同じ週があれば上書き、なければ追加
+ * - 空contentの場合はそのエントリを削除
+ * - weekで降順ソートし、先頭3件のみ保持
+ */
+export function upsertWeeklyUpdate(
+  updates: WeeklyUpdate[],
+  week: string,
+  content: string,
+): WeeklyUpdate[] {
+  let result = updates.filter((u) => u.week !== week)
+  if (content.trim()) {
+    result.push({ week, content: content.trim(), updatedAt: new Date().toISOString() })
+  }
+  return result.sort((a, b) => b.week.localeCompare(a.week)).slice(0, 3)
+}
+
 /**
  * 週の表示ラベルを返す（例: "2026/03/27 (金)"）
  */

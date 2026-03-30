@@ -92,6 +92,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
       const issue: Issue = {
         id: crypto.randomUUID(),
         ...data,
+        weeklyUpdates: [],
       }
       addIssue(systemId, issue)
     }

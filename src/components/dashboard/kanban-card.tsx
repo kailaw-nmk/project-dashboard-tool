@@ -1,7 +1,9 @@
 'use client'
 
+import { StickyNote } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getCurrentWeek } from '@/lib/week'
 import type { Issue, KeyItem } from '@/types/schema'
 
 const statusStyles: Record<string, { text: string; label: string }> = {
@@ -29,15 +31,29 @@ const keyItemTypeLabels: Record<string, string> = {
   dependency: '依存関係',
 }
 
+function UpdateIcon({ hasUpdate, onClick }: { hasUpdate: boolean; onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <button
+      className={`p-0.5 rounded hover:bg-accent ${hasUpdate ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
+      onClick={onClick}
+      title="週次アップデート"
+    >
+      <StickyNote className="h-3.5 w-3.5" />
+    </button>
+  )
+}
+
 interface IssueCardProps {
   issue: Issue
   onClick: () => void
+  onUpdateClick?: () => void
 }
 
-export function IssueCard({ issue, onClick }: IssueCardProps) {
+export function IssueCard({ issue, onClick, onUpdateClick }: IssueCardProps) {
   const status = statusStyles[issue.status]
   const priority = priorityStyles[issue.priority]
   const cardStyle = priorityCardStyle[issue.priority] ?? {}
+  const hasUpdate = (issue.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
 
   return (
     <Card
@@ -45,14 +61,19 @@ export function IssueCard({ issue, onClick }: IssueCardProps) {
       style={cardStyle}
       onClick={onClick}
     >
-      <div className="flex items-center gap-1.5 mb-1">
-        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
-          Issue
-        </Badge>
-        {priority && (
-          <Badge className={`text-[10px] px-1.5 py-0 ${priority.bg} ${priority.text} border-transparent`}>
-            {priority.label}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
+            Issue
           </Badge>
+          {priority && (
+            <Badge className={`text-[10px] px-1.5 py-0 ${priority.bg} ${priority.text} border-transparent`}>
+              {priority.label}
+            </Badge>
+          )}
+        </div>
+        {onUpdateClick && (
+          <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
         )}
       </div>
       <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{issue.title}</p>
@@ -69,11 +90,13 @@ export function IssueCard({ issue, onClick }: IssueCardProps) {
 interface KeyItemCardProps {
   keyItem: KeyItem
   onClick: () => void
+  onUpdateClick?: () => void
 }
 
-export function KeyItemCard({ keyItem, onClick }: KeyItemCardProps) {
+export function KeyItemCard({ keyItem, onClick, onUpdateClick }: KeyItemCardProps) {
   const status = statusStyles[keyItem.status]
   const typeLabel = keyItemTypeLabels[keyItem.type] ?? keyItem.type
+  const hasUpdate = (keyItem.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
 
   const typeBorderColor: Record<string, string> = {
     milestone: 'border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400',
@@ -87,13 +110,18 @@ export function KeyItemCard({ keyItem, onClick }: KeyItemCardProps) {
       className="cursor-pointer p-3 transition-shadow hover:shadow-md"
       onClick={onClick}
     >
-      <div className="flex items-center gap-1.5 mb-1">
-        <Badge
-          variant="outline"
-          className={`text-[10px] px-1.5 py-0 ${typeBorderColor[keyItem.type] ?? 'border-border text-muted-foreground'}`}
-        >
-          {typeLabel}
-        </Badge>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant="outline"
+            className={`text-[10px] px-1.5 py-0 ${typeBorderColor[keyItem.type] ?? 'border-border text-muted-foreground'}`}
+          >
+            {typeLabel}
+          </Badge>
+        </div>
+        {onUpdateClick && (
+          <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
+        )}
       </div>
       <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{keyItem.title}</p>
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">

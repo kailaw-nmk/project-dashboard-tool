@@ -34,6 +34,14 @@ export const PositionSchema = z.object({
   y: z.number(),
 })
 
+// --- WeeklyUpdate ---
+
+export const WeeklyUpdateSchema = z.object({
+  week: z.string(),
+  content: z.string(),
+  updatedAt: z.string(),
+})
+
 // --- Issue ---
 
 export const IssueSchema = z.object({
@@ -44,6 +52,7 @@ export const IssueSchema = z.object({
   assignee: z.string(),
   dueDate: z.string(),
   description: z.string(),
+  weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
 })
 
 // --- KeyItem ---
@@ -55,6 +64,7 @@ export const KeyItemSchema = z.object({
   description: z.string(),
   dueDate: z.string().optional(),
   status: z.enum(['open', 'in-progress', 'closed']),
+  weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
 })
 
 // --- System ---
@@ -119,6 +129,7 @@ export const ProjectDataSchema = z.object({
 
 // --- Inferred types ---
 
+export type WeeklyUpdate = z.infer<typeof WeeklyUpdateSchema>
 export type StatusOption = z.infer<typeof StatusOptionSchema>
 export type PhaseOption = z.infer<typeof PhaseOptionSchema>
 export type KeyItemType = z.infer<typeof KeyItemTypeSchema>

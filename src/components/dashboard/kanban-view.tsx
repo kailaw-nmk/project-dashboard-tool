@@ -36,7 +36,15 @@ import {
 import { IssueCard, KeyItemCard } from '@/components/dashboard/kanban-card'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
-import type { System, Issue, KeyItem } from '@/types/schema'
+import { WeeklyUpdateDialog } from '@/components/dashboard/weekly-update-dialog'
+import type { System, Issue, KeyItem, WeeklyUpdate } from '@/types/schema'
+
+type UpdateTarget = {
+  itemId: string
+  itemTitle: string
+  itemKind: 'issue' | 'keyItem'
+  weeklyUpdates: WeeklyUpdate[]
+} | null
 
 type ItemCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
 
@@ -130,6 +138,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
   const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
+  const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
   const groups = groupByStatus(system, activeFilters)
   const hasItems = groups.open.length > 0 || groups['in-progress'].length > 0 || groups.closed.length > 0
 
@@ -139,6 +148,14 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
     } else {
       setKeyItemDefaultType(type)
       setKeyItemFormOpen(true)
+    }
+  }
+
+  const openWeeklyUpdate = (item: KanbanItem) => {
+    if (item.kind === 'issue') {
+      setUpdateTarget({ itemId: item.data.id, itemTitle: item.data.title, itemKind: 'issue', weeklyUpdates: item.data.weeklyUpdates ?? [] })
+    } else {
+      setUpdateTarget({ itemId: item.data.id, itemTitle: item.data.title, itemKind: 'keyItem', weeklyUpdates: item.data.weeklyUpdates ?? [] })
     }
   }
 
@@ -212,9 +229,9 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
               <div className="space-y-1.5">
                 {items.map((item) =>
                   item.kind === 'issue' ? (
-                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} />
+                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
                   ) : (
-                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} />
+                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
                   ),
                 )}
               </div>
@@ -244,9 +261,9 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
               <div className="space-y-1.5">
                 {groups.closed.map((item) =>
                   item.kind === 'issue' ? (
-                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} />
+                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
                   ) : (
-                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} />
+                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
                   ),
                 )}
               </div>
@@ -269,6 +286,17 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
         editData={editingKeyItem}
         defaultType={keyItemDefaultType}
       />
+      {updateTarget && (
+        <WeeklyUpdateDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setUpdateTarget(null) }}
+          systemId={system.id}
+          itemId={updateTarget.itemId}
+          itemTitle={updateTarget.itemTitle}
+          itemKind={updateTarget.itemKind}
+          weeklyUpdates={updateTarget.weeklyUpdates}
+        />
+      )}
     </div>
   )
 }
@@ -285,6 +313,7 @@ function SingleSystemKanban({ system, activeFilters }: {
   const [issueFormOpen, setIssueFormOpen] = useState(false)
   const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
   const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
+  const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
 
   const groups = groupByStatus(system, activeFilters)
 
@@ -297,13 +326,21 @@ function SingleSystemKanban({ system, activeFilters }: {
     }
   }
 
+  const openWeeklyUpdate = (item: KanbanItem) => {
+    if (item.kind === 'issue') {
+      setUpdateTarget({ itemId: item.data.id, itemTitle: item.data.title, itemKind: 'issue', weeklyUpdates: item.data.weeklyUpdates ?? [] })
+    } else {
+      setUpdateTarget({ itemId: item.data.id, itemTitle: item.data.title, itemKind: 'keyItem', weeklyUpdates: item.data.weeklyUpdates ?? [] })
+    }
+  }
+
   const renderItems = (items: KanbanItem[]) => (
     <div className="space-y-1.5">
       {items.map((item) =>
         item.kind === 'issue' ? (
-          <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} />
+          <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
         ) : (
-          <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} />
+          <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
         ),
       )}
     </div>
@@ -366,6 +403,17 @@ function SingleSystemKanban({ system, activeFilters }: {
         editData={editingKeyItem}
         defaultType={keyItemDefaultType}
       />
+      {updateTarget && (
+        <WeeklyUpdateDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setUpdateTarget(null) }}
+          systemId={system.id}
+          itemId={updateTarget.itemId}
+          itemTitle={updateTarget.itemTitle}
+          itemKind={updateTarget.itemKind}
+          weeklyUpdates={updateTarget.weeklyUpdates}
+        />
+      )}
     </>
   )
 }

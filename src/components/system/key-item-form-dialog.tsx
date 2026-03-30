@@ -98,6 +98,7 @@ export function KeyItemFormDialog({
       const keyItem: KeyItem = {
         id: crypto.randomUUID(),
         ...data,
+        weeklyUpdates: [],
       }
       addKeyItem(systemId, keyItem)
     }
