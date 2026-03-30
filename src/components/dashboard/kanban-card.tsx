@@ -1,10 +1,18 @@
 'use client'
 
-import { StickyNote } from 'lucide-react'
+import { Flame, StickyNote } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getCurrentWeek } from '@/lib/week'
 import type { Issue, KeyItem } from '@/types/schema'
+
+function isOverdue(dueDate: string | undefined, status: string): boolean {
+  if (!dueDate || status === 'closed') return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(dueDate)
+  return due < today
+}
 
 const statusStyles: Record<string, { text: string; label: string }> = {
   open: { text: 'text-blue-600 dark:text-blue-400', label: '未対応' },
@@ -54,6 +62,7 @@ export function IssueCard({ issue, onClick, onUpdateClick }: IssueCardProps) {
   const priority = priorityStyles[issue.priority]
   const cardStyle = priorityCardStyle[issue.priority] ?? {}
   const hasUpdate = (issue.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
+  const overdue = isOverdue(issue.dueDate, issue.status)
 
   return (
     <Card
@@ -78,9 +87,17 @@ export function IssueCard({ issue, onClick, onUpdateClick }: IssueCardProps) {
       </div>
       <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{issue.title}</p>
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        {status && (
-          <span className={`${status.text}`}>● {status.label}</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {status && (
+            <span className={`${status.text}`}>● {status.label}</span>
+          )}
+          {overdue && (
+            <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
+              <Flame className="h-3 w-3" />
+              <span className="text-[10px]">{issue.dueDate}</span>
+            </span>
+          )}
+        </div>
         {issue.assignee && <span className="truncate max-w-[100px]">{issue.assignee}</span>}
       </div>
     </Card>
@@ -97,6 +114,7 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick }: KeyItemCardProp
   const status = statusStyles[keyItem.status]
   const typeLabel = keyItemTypeLabels[keyItem.type] ?? keyItem.type
   const hasUpdate = (keyItem.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
+  const overdue = isOverdue(keyItem.dueDate, keyItem.status)
 
   const typeBorderColor: Record<string, string> = {
     milestone: 'border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400',
@@ -125,9 +143,16 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick }: KeyItemCardProp
       </div>
       <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{keyItem.title}</p>
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        {status && (
-          <span className={`${status.text}`}>● {status.label}</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {status && (
+            <span className={`${status.text}`}>● {status.label}</span>
+          )}
+          {overdue && (
+            <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
+              <Flame className="h-3 w-3" />
+            </span>
+          )}
+        </div>
         {keyItem.dueDate && <span>{keyItem.dueDate}</span>}
       </div>
     </Card>
