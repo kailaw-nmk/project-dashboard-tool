@@ -217,7 +217,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-70"
           onClick={onClick}
         >
-          <span className="font-medium text-sm truncate">{system.name}</span>
+          <span className="font-medium truncate" style={{ fontSize: '0.9em' }}>{system.name}</span>
           {statusOption && (
             <Badge
               variant="outline"
@@ -266,10 +266,10 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
           return (
             <div key={status}>
               <div className="flex items-center gap-1.5 mb-1.5 px-1">
-                <span className="text-[11px] font-medium text-muted-foreground">
+                <span className="font-medium text-muted-foreground" style={{ fontSize: '0.75em' }}>
                   {statusSectionLabels[status]}
                 </span>
-                <span className="text-[11px] text-muted-foreground">{items.length}</span>
+                <span className="text-muted-foreground" style={{ fontSize: '0.75em' }}>{items.length}</span>
               </div>
               <div className="space-y-1.5">
                 {items.map(renderCard)}
@@ -413,8 +413,8 @@ function SingleSystemKanban({ system, activeFilters }: {
           return (
             <div key={status} className="flex flex-col bg-muted rounded-lg border min-h-[200px]">
               <div className="flex items-center gap-2 p-3 border-b">
-                <span className="text-sm font-medium">{statusSectionLabels[status]}</span>
-                <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                <span className="font-medium" style={{ fontSize: '0.9em' }}>{statusSectionLabels[status]}</span>
+                <Badge variant="secondary" style={{ fontSize: '0.75em' }}>{items.length}</Badge>
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-1.5" style={{ maxHeight: 'calc(100vh - 320px)' }}>
                 {items.length === 0 ? (

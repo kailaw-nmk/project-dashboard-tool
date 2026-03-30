@@ -46,7 +46,7 @@ function UpdateIcon({ hasUpdate, onClick }: { hasUpdate: boolean; onClick: (e: R
       onClick={onClick}
       title="週次アップデート"
     >
-      <StickyNote className="h-3.5 w-3.5" />
+      <StickyNote style={{ width: '1em', height: '1em' }} />
     </button>
   )
 }
@@ -75,11 +75,11 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
+          <Badge variant="outline" style={{ fontSize: '0.7em', padding: '0 0.4em' }} className="border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400">
             Issue
           </Badge>
           {priority && (
-            <Badge className={`text-[10px] px-1.5 py-0 ${priority.bg} ${priority.text} border-transparent`}>
+            <Badge style={{ fontSize: '0.7em', padding: '0 0.4em' }} className={`${priority.bg} ${priority.text} border-transparent`}>
               {priority.label}
             </Badge>
           )}
@@ -94,7 +94,7 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
               onClick={(e) => e.stopPropagation()}
               title={issue.externalLink}
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink style={{ width: '1em', height: '1em' }} />
             </a>
           )}
           {!linkMode && onUpdateClick && (
@@ -102,8 +102,8 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
           )}
         </div>
       </div>
-      <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{issue.title}</p>
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+      <p style={{ fontSize: '0.9em' }} className="font-medium leading-tight mb-1.5 line-clamp-2">{issue.title}</p>
+      <div className="flex items-center justify-between text-muted-foreground" style={{ fontSize: '0.75em' }}>
         <div className="flex items-center gap-1.5">
           {status && (
             <span className={`${status.text}`}>● {status.label}</span>
@@ -111,11 +111,11 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
           {issue.dueDate && (
             overdue ? (
               <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
-                <Flame className="h-3 w-3" />
-                <span className="text-[10px]">{issue.dueDate}</span>
+                <Flame style={{ width: '1em', height: '1em' }} />
+                <span>{issue.dueDate}</span>
               </span>
             ) : (
-              <span className="text-[10px]">{issue.dueDate}</span>
+              <span>{issue.dueDate}</span>
             )
           )}
         </div>
@@ -156,7 +156,8 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
         <div className="flex items-center gap-1.5">
           <Badge
             variant="outline"
-            className={`text-[10px] px-1.5 py-0 ${typeBorderColor[keyItem.type] ?? 'border-border text-muted-foreground'}`}
+            style={{ fontSize: '0.7em', padding: '0 0.4em' }}
+            className={`${typeBorderColor[keyItem.type] ?? 'border-border text-muted-foreground'}`}
           >
             {typeLabel}
           </Badge>
@@ -171,7 +172,7 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
               onClick={(e) => e.stopPropagation()}
               title={keyItem.externalLink}
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink style={{ width: '1em', height: '1em' }} />
             </a>
           )}
           {!linkMode && onUpdateClick && (
@@ -179,15 +180,15 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
           )}
         </div>
       </div>
-      <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{keyItem.title}</p>
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+      <p style={{ fontSize: '0.9em' }} className="font-medium leading-tight mb-1.5 line-clamp-2">{keyItem.title}</p>
+      <div className="flex items-center justify-between text-muted-foreground" style={{ fontSize: '0.75em' }}>
         <div className="flex items-center gap-1.5">
           {status && (
             <span className={`${status.text}`}>● {status.label}</span>
           )}
           {overdue && (
             <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
-              <Flame className="h-3 w-3" />
+              <Flame style={{ width: '1em', height: '1em' }} />
             </span>
           )}
         </div>
