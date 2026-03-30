@@ -54,8 +54,8 @@ export function KeyItemFormDialog({
   editData,
   defaultType = 'milestone',
 }: KeyItemFormDialogProps) {
-  const { addKeyItem, updateKeyItem } = useProjectStore(
-    useShallow((s) => ({ addKeyItem: s.addKeyItem, updateKeyItem: s.updateKeyItem })),
+  const { addKeyItem, updateKeyItem, deleteKeyItem } = useProjectStore(
+    useShallow((s) => ({ addKeyItem: s.addKeyItem, updateKeyItem: s.updateKeyItem, deleteKeyItem: s.deleteKeyItem })),
   )
 
   const isEdit = !!editData
@@ -184,9 +184,21 @@ export function KeyItemFormDialog({
               <Input {...register('externalLink')} placeholder="https://..." />
             </div>
           </div>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>キャンセル</DialogClose>
-            <Button type="submit">{isEdit ? '保存' : '追加'}</Button>
+          <DialogFooter className="flex justify-between">
+            {isEdit ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => { deleteKeyItem(systemId, editData.id); onOpenChange(false) }}
+              >
+                削除
+              </Button>
+            ) : <div />}
+            <div className="flex gap-2">
+              <DialogClose render={<Button variant="outline" />}>キャンセル</DialogClose>
+              <Button type="submit">{isEdit ? '保存' : '追加'}</Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

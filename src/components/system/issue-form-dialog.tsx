@@ -46,8 +46,8 @@ const priorityOptions = [
 ] as const
 
 export function IssueFormDialog({ open, onOpenChange, systemId, editData }: IssueFormDialogProps) {
-  const { addIssue, updateIssue } = useProjectStore(
-    useShallow((s) => ({ addIssue: s.addIssue, updateIssue: s.updateIssue })),
+  const { addIssue, updateIssue, deleteIssue } = useProjectStore(
+    useShallow((s) => ({ addIssue: s.addIssue, updateIssue: s.updateIssue, deleteIssue: s.deleteIssue })),
   )
 
   const isEdit = !!editData
@@ -182,9 +182,21 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               <Input {...register('externalLink')} placeholder="https://..." />
             </div>
           </div>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>キャンセル</DialogClose>
-            <Button type="submit">{isEdit ? '保存' : '追加'}</Button>
+          <DialogFooter className="flex justify-between">
+            {isEdit ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => { deleteIssue(systemId, editData.id); onOpenChange(false) }}
+              >
+                削除
+              </Button>
+            ) : <div />}
+            <div className="flex gap-2">
+              <DialogClose render={<Button variant="outline" />}>キャンセル</DialogClose>
+              <Button type="submit">{isEdit ? '保存' : '追加'}</Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
