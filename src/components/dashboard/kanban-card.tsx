@@ -94,11 +94,15 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
           {status && (
             <span className={`${status.text}`}>● {status.label}</span>
           )}
-          {overdue && (
-            <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
-              <Flame className="h-3 w-3" />
+          {issue.dueDate && (
+            overdue ? (
+              <span className="flex items-center gap-0.5 text-red-500 dark:text-red-400" title="期限超過">
+                <Flame className="h-3 w-3" />
+                <span className="text-[10px]">{issue.dueDate}</span>
+              </span>
+            ) : (
               <span className="text-[10px]">{issue.dueDate}</span>
-            </span>
+            )
           )}
         </div>
         {issue.assignee && <span className="truncate max-w-[100px]">{issue.assignee}</span>}
