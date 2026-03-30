@@ -55,9 +55,12 @@ interface IssueCardProps {
   issue: Issue
   onClick: () => void
   onUpdateClick?: () => void
+  linkMode?: boolean
+  linkSelected?: boolean
+  onLinkClick?: () => void
 }
 
-export function IssueCard({ issue, onClick, onUpdateClick }: IssueCardProps) {
+export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: IssueCardProps) {
   const status = statusStyles[issue.status]
   const priority = priorityStyles[issue.priority]
   const cardStyle = priorityCardStyle[issue.priority] ?? {}
@@ -66,9 +69,9 @@ export function IssueCard({ issue, onClick, onUpdateClick }: IssueCardProps) {
 
   return (
     <Card
-      className="cursor-pointer p-3 transition-shadow hover:shadow-md"
+      className={`cursor-pointer p-3 transition-shadow hover:shadow-md ${linkMode ? 'ring-2 ring-blue-400/50 hover:ring-blue-500' : ''} ${linkSelected ? 'ring-2 ring-emerald-500' : ''}`}
       style={cardStyle}
-      onClick={onClick}
+      onClick={linkMode ? onLinkClick : onClick}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
@@ -81,7 +84,7 @@ export function IssueCard({ issue, onClick, onUpdateClick }: IssueCardProps) {
             </Badge>
           )}
         </div>
-        {onUpdateClick && (
+        {!linkMode && onUpdateClick && (
           <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
         )}
       </div>
@@ -108,9 +111,12 @@ interface KeyItemCardProps {
   keyItem: KeyItem
   onClick: () => void
   onUpdateClick?: () => void
+  linkMode?: boolean
+  linkSelected?: boolean
+  onLinkClick?: () => void
 }
 
-export function KeyItemCard({ keyItem, onClick, onUpdateClick }: KeyItemCardProps) {
+export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: KeyItemCardProps) {
   const status = statusStyles[keyItem.status]
   const typeLabel = keyItemTypeLabels[keyItem.type] ?? keyItem.type
   const hasUpdate = (keyItem.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
@@ -125,8 +131,8 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick }: KeyItemCardProp
 
   return (
     <Card
-      className="cursor-pointer p-3 transition-shadow hover:shadow-md"
-      onClick={onClick}
+      className={`cursor-pointer p-3 transition-shadow hover:shadow-md ${linkMode ? 'ring-2 ring-blue-400/50 hover:ring-blue-500' : ''} ${linkSelected ? 'ring-2 ring-emerald-500' : ''}`}
+      onClick={linkMode ? onLinkClick : onClick}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
@@ -137,7 +143,7 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick }: KeyItemCardProp
             {typeLabel}
           </Badge>
         </div>
-        {onUpdateClick && (
+        {!linkMode && onUpdateClick && (
           <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
         )}
       </div>

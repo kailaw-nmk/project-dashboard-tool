@@ -65,6 +65,7 @@ describe('IssueFormSchema', () => {
       assignee: '',
       dueDate: '',
       description: '',
+      externalLink: '',
     })
     expect(result.success).toBe(true)
   })
@@ -113,6 +114,7 @@ describe('KeyItemFormSchema', () => {
       title: 'テスト',
       description: '',
       status: 'open',
+      externalLink: '',
     })
     expect(result.success).toBe(true)
   })
@@ -124,6 +126,7 @@ describe('KeyItemFormSchema', () => {
       description: '',
       dueDate: '2026-03-01',
       status: 'in-progress',
+      externalLink: '',
     })
     expect(result.success).toBe(true)
   })

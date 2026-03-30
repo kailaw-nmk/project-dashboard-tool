@@ -7,6 +7,7 @@ import type {
   Issue,
   KeyItem,
   Dependency,
+  ItemDependency,
   WeeklySnapshot,
 } from '@/types/schema'
 import { getCurrentWeek } from '@/lib/week'
@@ -43,6 +44,10 @@ interface ProjectState {
   addDependency: (dependency: Dependency) => void
   updateDependency: (dependencyId: string, updates: Partial<Dependency>) => void
   deleteDependency: (dependencyId: string) => void
+
+  // Item Dependency
+  addItemDependency: (dep: ItemDependency) => void
+  deleteItemDependency: (id: string) => void
 
   // Snapshot
   saveSnapshot: (snapshot: WeeklySnapshot) => void
@@ -163,6 +168,9 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
             issues: s.issues.filter((i) => i.id !== issueId),
             updatedAt: now(),
           })),
+          itemDependencies: (state.projectData.itemDependencies ?? []).filter(
+            (d) => d.sourceItemId !== issueId && d.targetItemId !== issueId,
+          ),
         }),
       }
     }),
@@ -209,6 +217,9 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
             keyItems: s.keyItems.filter((k) => k.id !== keyItemId),
             updatedAt: now(),
           })),
+          itemDependencies: (state.projectData.itemDependencies ?? []).filter(
+            (d) => d.sourceItemId !== keyItemId && d.targetItemId !== keyItemId,
+          ),
         }),
       }
     }),
@@ -264,6 +275,28 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
         projectData: updateProjectTimestamp({
           ...state.projectData,
           weeklySnapshots,
+        }),
+      }
+    }),
+
+  addItemDependency: (dep) =>
+    set((state) => {
+      if (!state.projectData) return state
+      return {
+        projectData: updateProjectTimestamp({
+          ...state.projectData,
+          itemDependencies: [...(state.projectData.itemDependencies ?? []), dep],
+        }),
+      }
+    }),
+
+  deleteItemDependency: (id) =>
+    set((state) => {
+      if (!state.projectData) return state
+      return {
+        projectData: updateProjectTimestamp({
+          ...state.projectData,
+          itemDependencies: (state.projectData.itemDependencies ?? []).filter((d) => d.id !== id),
         }),
       }
     }),

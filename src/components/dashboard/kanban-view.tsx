@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Filter, GripVertical, Layers, Monitor, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, GripVertical, Layers, Link2, Monitor, Plus } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -37,6 +37,7 @@ import { IssueCard, KeyItemCard } from '@/components/dashboard/kanban-card'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { WeeklyUpdateDialog } from '@/components/dashboard/weekly-update-dialog'
+import { ItemLinkDialog, type LinkSourceTarget } from '@/components/dashboard/item-link-dialog'
 import type { System, Issue, KeyItem, WeeklyUpdate } from '@/types/schema'
 
 type UpdateTarget = {
@@ -99,11 +100,14 @@ const statusSectionLabels: Record<string, string> = {
 
 type AddItemType = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
 
-function SortableSystemColumn({ system, statusOption, onClick, activeFilters }: {
+function SortableSystemColumn({ system, statusOption, onClick, activeFilters, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
+  linkMode?: boolean
+  linkSourceId?: string | null
+  onLinkClick?: (info: LinkSourceTarget) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: system.id })
   const style = {
@@ -120,17 +124,23 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters }: 
         onClick={onClick}
         activeFilters={activeFilters}
         dragListeners={listeners}
+        linkMode={linkMode}
+        linkSourceId={linkSourceId}
+        onLinkClick={onLinkClick}
       />
     </div>
   )
 }
 
-function SystemColumn({ system, statusOption, onClick, activeFilters, dragListeners }: {
+function SystemColumn({ system, statusOption, onClick, activeFilters, dragListeners, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
   dragListeners?: Record<string, Function>
+  linkMode?: boolean
+  linkSourceId?: string | null
+  onLinkClick?: (info: LinkSourceTarget) => void
 }) {
   const [closedOpen, setClosedOpen] = useState(false)
   const [issueFormOpen, setIssueFormOpen] = useState(false)
@@ -157,6 +167,41 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
     } else {
       setUpdateTarget({ itemId: item.data.id, itemTitle: item.data.title, itemKind: 'keyItem', weeklyUpdates: item.data.weeklyUpdates ?? [] })
     }
+  }
+
+  const makeLinkInfo = (item: KanbanItem): LinkSourceTarget => ({
+    systemId: system.id,
+    itemId: item.data.id,
+    itemKind: item.kind === 'issue' ? 'issue' : 'keyItem',
+    title: item.data.title,
+  })
+
+  const renderCard = (item: KanbanItem) => {
+    const isSelected = linkSourceId === item.data.id
+    if (item.kind === 'issue') {
+      return (
+        <IssueCard
+          key={item.data.id}
+          issue={item.data}
+          onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }}
+          onUpdateClick={() => openWeeklyUpdate(item)}
+          linkMode={linkMode}
+          linkSelected={isSelected}
+          onLinkClick={() => onLinkClick?.(makeLinkInfo(item))}
+        />
+      )
+    }
+    return (
+      <KeyItemCard
+        key={item.data.id}
+        keyItem={item.data}
+        onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }}
+        onUpdateClick={() => openWeeklyUpdate(item)}
+        linkMode={linkMode}
+        linkSelected={isSelected}
+        onLinkClick={() => onLinkClick?.(makeLinkInfo(item))}
+      />
+    )
   }
 
   return (
@@ -227,13 +272,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
                 <span className="text-[11px] text-muted-foreground">{items.length}</span>
               </div>
               <div className="space-y-1.5">
-                {items.map((item) =>
-                  item.kind === 'issue' ? (
-                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
-                  ) : (
-                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
-                  ),
-                )}
+                {items.map(renderCard)}
               </div>
             </div>
           )
@@ -429,6 +468,23 @@ export function KanbanView() {
   const reorderSystems = useProjectStore((s) => s.reorderSystems)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
+  const [linkMode, setLinkMode] = useState(false)
+  const [linkSource, setLinkSource] = useState<LinkSourceTarget | null>(null)
+  const [linkTarget, setLinkTarget] = useState<LinkSourceTarget | null>(null)
+
+  const handleLinkClick = (info: LinkSourceTarget) => {
+    if (!linkSource) {
+      setLinkSource(info)
+    } else if (linkSource.itemId !== info.itemId) {
+      setLinkTarget(info)
+    }
+  }
+
+  const resetLinkMode = () => {
+    setLinkMode(false)
+    setLinkSource(null)
+    setLinkTarget(null)
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -498,6 +554,25 @@ export function KanbanView() {
         {/* Separator */}
         <div className="h-5 w-px bg-border" />
 
+        {/* Link mode toggle */}
+        <Button
+          variant={linkMode ? 'default' : 'outline'}
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => { if (linkMode) resetLinkMode(); else { setLinkMode(true); setLinkSource(null); setLinkTarget(null) } }}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+          依存関係
+        </Button>
+        {linkMode && (
+          <span className="text-xs text-muted-foreground">
+            {!linkSource ? '1つ目のアイテムを選択' : '2つ目のアイテムを選択'}
+          </span>
+        )}
+
+        {/* Separator */}
+        <div className="h-5 w-px bg-border" />
+
         {/* Filter bar */}
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -548,6 +623,9 @@ export function KanbanView() {
                     system={system}
                     statusOption={settings.statusOptions.find((o) => o.id === system.status)}
                     onClick={() => setSelectedSystemId(system.id)}
+                    linkMode={linkMode}
+                    linkSourceId={linkSource?.itemId ?? null}
+                    onLinkClick={handleLinkClick}
                     activeFilters={activeFilters}
                   />
                 ))}
@@ -555,6 +633,16 @@ export function KanbanView() {
             </div>
           </SortableContext>
         </DndContext>
+      )}
+
+      {/* Item link dialog */}
+      {linkSource && linkTarget && (
+        <ItemLinkDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) resetLinkMode() }}
+          source={linkSource}
+          target={linkTarget}
+        />
       )}
     </div>
   )

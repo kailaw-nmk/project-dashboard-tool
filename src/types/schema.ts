@@ -97,6 +97,20 @@ export const DependencySchema = z.object({
   type: z.enum(['api', 'data', 'event', 'other']),
 })
 
+// --- Item Dependency ---
+
+export const ItemDependencySchema = z.object({
+  id: z.string(),
+  sourceSystemId: z.string(),
+  sourceItemId: z.string(),
+  sourceItemKind: z.enum(['issue', 'keyItem']),
+  targetSystemId: z.string(),
+  targetItemId: z.string(),
+  targetItemKind: z.enum(['issue', 'keyItem']),
+  label: z.string(),
+  createdAt: z.string(),
+})
+
 // --- Weekly Snapshot ---
 
 export const WeeklySystemSnapshotSchema = z.object({
@@ -126,6 +140,7 @@ export const ProjectDataSchema = z.object({
   settings: SettingsSchema,
   systems: z.array(SystemSchema),
   dependencies: z.array(DependencySchema),
+  itemDependencies: z.array(ItemDependencySchema).default([]),
   weeklySnapshots: z.array(WeeklySnapshotSchema),
 })
 
@@ -141,6 +156,7 @@ export type Issue = z.infer<typeof IssueSchema>
 export type KeyItem = z.infer<typeof KeyItemSchema>
 export type System = z.infer<typeof SystemSchema>
 export type Dependency = z.infer<typeof DependencySchema>
+export type ItemDependency = z.infer<typeof ItemDependencySchema>
 export type WeeklySystemSnapshot = z.infer<typeof WeeklySystemSnapshotSchema>
 export type WeeklySnapshot = z.infer<typeof WeeklySnapshotSchema>
 export type ProjectData = z.infer<typeof ProjectDataSchema>
