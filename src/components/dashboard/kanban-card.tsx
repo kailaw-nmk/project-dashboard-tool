@@ -1,6 +1,6 @@
 'use client'
 
-import { Flame, StickyNote } from 'lucide-react'
+import { ExternalLink, Flame, StickyNote } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getCurrentWeek } from '@/lib/week'
@@ -84,9 +84,23 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
             </Badge>
           )}
         </div>
-        {!linkMode && onUpdateClick && (
-          <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
-        )}
+        <div className="flex items-center gap-1">
+          {!linkMode && issue.externalLink && (
+            <a
+              href={issue.externalLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-0.5 rounded hover:bg-accent text-muted-foreground/60 hover:text-blue-500"
+              onClick={(e) => e.stopPropagation()}
+              title={issue.externalLink}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          {!linkMode && onUpdateClick && (
+            <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
+          )}
+        </div>
       </div>
       <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{issue.title}</p>
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -147,9 +161,23 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
             {typeLabel}
           </Badge>
         </div>
-        {!linkMode && onUpdateClick && (
-          <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
-        )}
+        <div className="flex items-center gap-1">
+          {!linkMode && keyItem.externalLink && (
+            <a
+              href={keyItem.externalLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-0.5 rounded hover:bg-accent text-muted-foreground/60 hover:text-blue-500"
+              onClick={(e) => e.stopPropagation()}
+              title={keyItem.externalLink}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          {!linkMode && onUpdateClick && (
+            <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
+          )}
+        </div>
       </div>
       <p className="text-sm font-medium leading-tight mb-1.5 line-clamp-2">{keyItem.title}</p>
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
