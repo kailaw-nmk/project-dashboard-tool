@@ -28,9 +28,9 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (projectData) {
-      exportProjectDataAsJson(projectData)
+      await exportProjectDataAsJson(projectData)
     }
   }
 
