@@ -1,11 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Filter, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, Layers, Monitor, Plus } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -222,6 +229,101 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
 
 const allCategories: ItemCategory[] = ['issue', 'milestone', 'risk', 'decision', 'dependency']
 
+/** 個別システムビュー: ステータス別3カラム */
+function SingleSystemKanban({ system, activeFilters }: {
+  system: System
+  activeFilters: Set<ItemCategory>
+}) {
+  const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
+  const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
+  const [issueFormOpen, setIssueFormOpen] = useState(false)
+  const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
+  const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
+
+  const groups = groupByStatus(system, activeFilters)
+
+  const handleAddItem = (type: AddItemType) => {
+    if (type === 'issue') {
+      setIssueFormOpen(true)
+    } else {
+      setKeyItemDefaultType(type)
+      setKeyItemFormOpen(true)
+    }
+  }
+
+  const renderItems = (items: KanbanItem[]) => (
+    <div className="space-y-1.5">
+      {items.map((item) =>
+        item.kind === 'issue' ? (
+          <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} />
+        ) : (
+          <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} />
+        ),
+      )}
+    </div>
+  )
+
+  return (
+    <>
+      {/* Add button */}
+      <div className="flex justify-end mb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="outline" size="sm" className="h-7" />}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            追加
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleAddItem('issue')}>Issue</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('milestone')}>マイルストーン</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('risk')}>リスク</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('decision')}>決定事項</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddItem('dependency')}>依存関係</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* 3-column status board */}
+      <div className="grid grid-cols-3 gap-3">
+        {(['open', 'in-progress', 'closed'] as const).map((status) => {
+          const items = groups[status]
+          return (
+            <div key={status} className="flex flex-col bg-muted rounded-lg border min-h-[200px]">
+              <div className="flex items-center gap-2 p-3 border-b">
+                <span className="text-sm font-medium">{statusSectionLabels[status]}</span>
+                <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1.5" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+                {items.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">アイテムなし</p>
+                ) : (
+                  renderItems(items)
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Form dialogs */}
+      <IssueFormDialog
+        open={issueFormOpen}
+        onOpenChange={(open) => { setIssueFormOpen(open); if (!open) setEditingIssue(null) }}
+        systemId={system.id}
+        editData={editingIssue}
+      />
+      <KeyItemFormDialog
+        open={keyItemFormOpen}
+        onOpenChange={(open) => { setKeyItemFormOpen(open); if (!open) setEditingKeyItem(null) }}
+        systemId={system.id}
+        editData={editingKeyItem}
+        defaultType={keyItemDefaultType}
+      />
+    </>
+  )
+}
+
 export function KanbanView() {
   const { systems, settings } = useProjectStore(
     useShallow((s) => ({
@@ -231,6 +333,7 @@ export function KanbanView() {
   )
   const setSelectedSystemId = useProjectStore((s) => s.setSelectedSystemId)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
+  const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
 
   const toggleFilter = (category: ItemCategory) => {
     setActiveFilters((prev) => {
@@ -246,51 +349,100 @@ export function KanbanView() {
 
   if (!settings) return null
 
+  const selectedSystem = selectedSystemForKanban
+    ? systems.find((s) => s.id === selectedSystemForKanban)
+    : null
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Filter bar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="h-4 w-4 text-muted-foreground" />
-        {allCategories.map((cat) => {
-          const isActive = activeFilters.has(cat)
-          return (
-            <Button
-              key={cat}
-              variant={isActive ? 'default' : 'outline'}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => toggleFilter(cat)}
-            >
-              {categoryLabels[cat]}
-            </Button>
-          )
-        })}
-        {activeFilters.size > 0 && (
+      {/* Toolbar: view switch + filters */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* View mode toggle */}
+        <div className="flex items-center gap-1 border rounded-md p-0.5">
           <Button
-            variant="ghost"
+            variant={selectedSystemForKanban === null ? 'default' : 'ghost'}
             size="sm"
-            className="h-7 text-xs text-muted-foreground"
-            onClick={() => setActiveFilters(new Set())}
+            className="h-7 text-xs gap-1"
+            onClick={() => setSelectedSystemForKanban(null)}
           >
-            クリア
+            <Layers className="h-3.5 w-3.5" />
+            全システム
           </Button>
-        )}
-      </div>
+          <Select
+            value={selectedSystemForKanban ?? ''}
+            onValueChange={(value) => { if (value) setSelectedSystemForKanban(value) }}
+          >
+            <SelectTrigger
+              className={`h-7 text-xs border-none gap-1 min-w-[140px] ${selectedSystemForKanban ? 'bg-primary text-primary-foreground' : ''}`}
+            >
+              <Monitor className="h-3.5 w-3.5 shrink-0" />
+              {selectedSystem ? selectedSystem.name : 'システム選択'}
+            </SelectTrigger>
+            <SelectContent>
+              {systems.map((sys) => (
+                <SelectItem key={sys.id} value={sys.id}>{sys.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Kanban columns */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-3 min-w-min">
-          {systems.map((system) => (
-            <SystemColumn
-              key={system.id}
-              system={system}
-              statusOption={settings.statusOptions.find((o) => o.id === system.status)}
-              onClick={() => setSelectedSystemId(system.id)}
-              activeFilters={activeFilters}
-            />
-          ))}
+        {/* Separator */}
+        <div className="h-5 w-px bg-border" />
+
+        {/* Filter bar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          {allCategories.map((cat) => {
+            const isActive = activeFilters.has(cat)
+            return (
+              <Button
+                key={cat}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => toggleFilter(cat)}
+              >
+                {categoryLabels[cat]}
+              </Button>
+            )
+          })}
+          {activeFilters.size > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground"
+              onClick={() => setActiveFilters(new Set())}
+            >
+              クリア
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Content */}
+      {selectedSystem ? (
+        /* Single system kanban: 3-column status board */
+        <SingleSystemKanban
+          key={selectedSystem.id}
+          system={selectedSystem}
+          activeFilters={activeFilters}
+        />
+      ) : (
+        /* All systems: horizontal columns */
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-3 min-w-min">
+            {systems.map((system) => (
+              <SystemColumn
+                key={system.id}
+                system={system}
+                statusOption={settings.statusOptions.find((o) => o.id === system.status)}
+                onClick={() => setSelectedSystemId(system.id)}
+                activeFilters={activeFilters}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
