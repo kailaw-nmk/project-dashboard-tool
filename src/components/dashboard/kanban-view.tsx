@@ -1,7 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Filter, Layers, Monitor, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Filter, GripVertical, Layers, Monitor, Plus } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useProjectStore } from '@/stores/project-store'
 import { useShallow } from 'zustand/react/shallow'
 import { Badge } from '@/components/ui/badge'
@@ -77,11 +91,38 @@ const statusSectionLabels: Record<string, string> = {
 
 type AddItemType = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
 
-function SystemColumn({ system, statusOption, onClick, activeFilters }: {
+function SortableSystemColumn({ system, statusOption, onClick, activeFilters }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: system.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <SystemColumn
+        system={system}
+        statusOption={statusOption}
+        onClick={onClick}
+        activeFilters={activeFilters}
+        dragListeners={listeners}
+      />
+    </div>
+  )
+}
+
+function SystemColumn({ system, statusOption, onClick, activeFilters, dragListeners }: {
+  system: System
+  statusOption: { label: string; color: string } | undefined
+  onClick: () => void
+  activeFilters: Set<ItemCategory>
+  dragListeners?: Record<string, Function>
 }) {
   const [closedOpen, setClosedOpen] = useState(false)
   const [issueFormOpen, setIssueFormOpen] = useState(false)
@@ -105,6 +146,11 @@ function SystemColumn({ system, statusOption, onClick, activeFilters }: {
     <div className="flex flex-col w-[290px] min-w-[290px] bg-muted rounded-lg border">
       {/* Column header */}
       <div className="flex items-center justify-between p-3 border-b">
+        {dragListeners && (
+          <div className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground mr-1" {...dragListeners}>
+            <GripVertical className="h-4 w-4" />
+          </div>
+        )}
         <div
           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer hover:opacity-70"
           onClick={onClick}
@@ -332,8 +378,23 @@ export function KanbanView() {
     })),
   )
   const setSelectedSystemId = useProjectStore((s) => s.setSelectedSystemId)
+  const reorderSystems = useProjectStore((s) => s.reorderSystems)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const fromIndex = systems.findIndex((s) => s.id === active.id)
+    const toIndex = systems.findIndex((s) => s.id === over.id)
+    if (fromIndex >= 0 && toIndex >= 0) {
+      reorderSystems(fromIndex, toIndex)
+    }
+  }
 
   const toggleFilter = (category: ItemCategory) => {
     setActiveFilters((prev) => {
@@ -428,20 +489,24 @@ export function KanbanView() {
           activeFilters={activeFilters}
         />
       ) : (
-        /* All systems: horizontal columns */
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-3 min-w-min">
-            {systems.map((system) => (
-              <SystemColumn
-                key={system.id}
-                system={system}
-                statusOption={settings.statusOptions.find((o) => o.id === system.status)}
-                onClick={() => setSelectedSystemId(system.id)}
-                activeFilters={activeFilters}
-              />
-            ))}
-          </div>
-        </div>
+        /* All systems: horizontal columns with drag reorder */
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={systems.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
+            <div className="overflow-x-auto pb-4">
+              <div className="flex gap-3 min-w-min">
+                {systems.map((system) => (
+                  <SortableSystemColumn
+                    key={system.id}
+                    system={system}
+                    statusOption={settings.statusOptions.find((o) => o.id === system.status)}
+                    onClick={() => setSelectedSystemId(system.id)}
+                    activeFilters={activeFilters}
+                  />
+                ))}
+              </div>
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   )

@@ -48,6 +48,9 @@ interface ProjectState {
   saveSnapshot: (snapshot: WeeklySnapshot) => void
   deleteSnapshot: (week: string) => void
 
+  // System reorder
+  reorderSystems: (fromIndex: number, toIndex: number) => void
+
   // UI actions
   setSelectedSystemId: (id: string | null) => void
   setActiveView: (view: ActiveView) => void
@@ -273,6 +276,17 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
           ...state.projectData,
           weeklySnapshots: state.projectData.weeklySnapshots.filter((s) => s.week !== week),
         }),
+      }
+    }),
+
+  reorderSystems: (fromIndex, toIndex) =>
+    set((state) => {
+      if (!state.projectData) return state
+      const systems = [...state.projectData.systems]
+      const [moved] = systems.splice(fromIndex, 1)
+      systems.splice(toIndex, 0, moved)
+      return {
+        projectData: updateProjectTimestamp({ ...state.projectData, systems }),
       }
     }),
 
