@@ -27,7 +27,7 @@ export function ExportChartView() {
   const statusOptions = settings?.statusOptions ?? []
   const sortedSnapshots = [...snapshots].sort((a, b) => a.week.localeCompare(b.week))
 
-  if (sortedSnapshots.length < 2) return null
+  if (sortedSnapshots.length === 0) return null
 
   const statusChartData = sortedSnapshots.map((snap) => {
     const counts: Record<string, number> = {}

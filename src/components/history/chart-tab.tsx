@@ -28,10 +28,10 @@ export function ChartTab() {
   const statusOptions = settings?.statusOptions ?? []
   const sortedSnapshots = [...snapshots].sort((a, b) => a.week.localeCompare(b.week))
 
-  if (sortedSnapshots.length < 2) {
+  if (sortedSnapshots.length === 0) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        推移グラフを表示するには2件以上のスナップショットが必要です。
+        推移グラフを表示するにはスナップショットが必要です。
       </div>
     )
   }
