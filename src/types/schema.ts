@@ -52,6 +52,7 @@ export const IssueSchema = z.object({
   assignee: z.string(),
   dueDate: z.string(),
   description: z.string(),
+  externalLink: z.string().default(''),
   weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
 })
 
@@ -64,6 +65,7 @@ export const KeyItemSchema = z.object({
   description: z.string(),
   dueDate: z.string().optional(),
   status: z.enum(['open', 'in-progress', 'closed']),
+  externalLink: z.string().default(''),
   weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
 })
 

@@ -16,6 +16,7 @@ export const IssueFormSchema = z.object({
   assignee: z.string(),
   dueDate: z.string(),
   description: z.string(),
+  externalLink: z.string(),
 })
 
 export const KeyItemFormSchema = z.object({
@@ -24,6 +25,7 @@ export const KeyItemFormSchema = z.object({
   description: z.string(),
   dueDate: z.string().optional(),
   status: z.enum(['open', 'in-progress', 'closed']),
+  externalLink: z.string(),
 })
 
 export const DependencyFormSchema = z.object({

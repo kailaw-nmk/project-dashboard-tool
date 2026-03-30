@@ -79,6 +79,7 @@ export function KeyItemFormDialog({
               description: editData.description,
               dueDate: editData.dueDate ?? '',
               status: editData.status,
+              externalLink: editData.externalLink ?? '',
             }
           : {
               type: defaultType,
@@ -86,6 +87,7 @@ export function KeyItemFormDialog({
               description: '',
               dueDate: '',
               status: 'open',
+              externalLink: '',
             },
       )
     }
@@ -176,6 +178,10 @@ export function KeyItemFormDialog({
             <div>
               <label className="mb-1 block text-sm font-medium">期限</label>
               <Input type="date" {...register('dueDate')} />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">外部リンク</label>
+              <Input {...register('externalLink')} placeholder="https://..." />
             </div>
           </div>
           <DialogFooter>

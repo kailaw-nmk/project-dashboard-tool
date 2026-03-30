@@ -72,6 +72,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               assignee: editData.assignee,
               dueDate: editData.dueDate,
               description: editData.description,
+              externalLink: editData.externalLink ?? '',
             }
           : {
               title: '',
@@ -80,6 +81,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               assignee: '',
               dueDate: '',
               description: '',
+              externalLink: '',
             },
       )
     }
@@ -174,6 +176,10 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
                 className="w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 rows={2}
               />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">外部リンク</label>
+              <Input {...register('externalLink')} placeholder="https://..." />
             </div>
           </div>
           <DialogFooter>
