@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { AArrowDown, AArrowUp, ChevronDown, ChevronRight, Filter, GripVertical, Layers, Link2, Monitor, Plus, RotateCcw } from 'lucide-react'
+import { AArrowDown, AArrowUp, ChevronDown, ChevronRight, Columns3, Filter, GripVertical, Layers, Link2, List, Monitor, Plus, RotateCcw } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -38,6 +38,7 @@ import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { WeeklyUpdateDialog } from '@/components/dashboard/weekly-update-dialog'
 import { ItemLinkDialog, type LinkSourceTarget } from '@/components/dashboard/item-link-dialog'
+import { KanbanTableView } from '@/components/dashboard/kanban-table-view'
 import type { System, Issue, KeyItem, WeeklyUpdate } from '@/types/schema'
 
 type UpdateTarget = {
@@ -468,6 +469,7 @@ export function KanbanView() {
   const reorderSystems = useProjectStore((s) => s.reorderSystems)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
+  const [viewStyle, setViewStyle] = useState<'card' | 'table'>('card')
   const [fontSize, setFontSize] = useState(100)
 
   useEffect(() => {
@@ -571,6 +573,28 @@ export function KanbanView() {
           </Select>
         </div>
 
+        {/* View style toggle */}
+        <div className="flex items-center gap-0.5 border rounded-md p-0.5">
+          <Button
+            variant={viewStyle === 'card' ? 'default' : 'ghost'}
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setViewStyle('card')}
+            title="カード表示"
+          >
+            <Columns3 className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={viewStyle === 'table' ? 'default' : 'ghost'}
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setViewStyle('table')}
+            title="テーブル表示"
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
         {/* Separator */}
         <div className="h-5 w-px bg-border" />
 
@@ -644,7 +668,14 @@ export function KanbanView() {
 
       {/* Content */}
       <div style={{ fontSize: `${fontSize}%` }}>
-        {selectedSystem ? (
+        {viewStyle === 'table' ? (
+          /* Table list view */
+          <KanbanTableView
+            systems={systems}
+            activeFilters={activeFilters}
+            selectedSystemId={selectedSystemForKanban}
+          />
+        ) : selectedSystem ? (
           /* Single system kanban: 3-column status board */
           <SingleSystemKanban
             key={selectedSystem.id}
