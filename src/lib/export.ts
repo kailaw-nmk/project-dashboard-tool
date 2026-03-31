@@ -39,19 +39,6 @@ async function savePng(blob: Blob, filename: string): Promise<void> {
   }
 }
 
-async function captureElement(elementId: string): Promise<Blob> {
-  const element = document.getElementById(elementId)
-  if (!element) {
-    throw new Error(`エクスポート対象の要素(${elementId})が見つかりません。`)
-  }
-  const dataUrl = await toPng(element, {
-    backgroundColor: '#ffffff',
-    pixelRatio: 2,
-  })
-  const res = await fetch(dataUrl)
-  return res.blob()
-}
-
 export async function exportProjectDataAsJson(data: ProjectData): Promise<void> {
   const json = JSON.stringify(data, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
@@ -65,115 +52,18 @@ export async function exportProjectDataAsJson(data: ProjectData): Promise<void> 
 }
 
 /**
- * 3枚のPNGを連続エクスポート（全てオフスクリーン生成、どのタブからでも実行可能）
- * 1. サマリービュー
- * 2. アイテムリスト
- * 3. 推移グラフ（スナップショットがない場合はスキップ）
+ * アイテムリストのPNGをエクスポート
  */
 export async function exportAllPngs(
   projectData: ProjectData,
   onStatus?: (msg: string) => void,
 ): Promise<void> {
   const date = new Date().toISOString().slice(0, 10)
-  const prefix = `Dashboard_${projectData.projectName}_${date}`
+  const filename = `Dashboard_${projectData.projectName}_${date}_items.png`
 
-  // 1. サマリー（オフスクリーンDOM生成）
-  onStatus?.('サマリーをエクスポート中...')
-  const summaryBlob = await renderSummaryOffscreen(projectData)
-  await savePng(summaryBlob, `${prefix}_1_summary.png`)
-
-  // 2. アイテムリスト（オフスクリーンDOM生成）
   onStatus?.('アイテムリストをエクスポート中...')
-  const itemListBlob = await renderItemListOffscreen(projectData)
-  await savePng(itemListBlob, `${prefix}_2_items.png`)
-
-  // 3. 推移グラフ（スナップショットがある場合のみ）
-  if (projectData.weeklySnapshots.length > 0) {
-    onStatus?.('推移グラフをエクスポート中...')
-    // オフスクリーンチャートが描画されるまで少し待つ
-    await new Promise((r) => setTimeout(r, 500))
-    const chartEl = document.getElementById('export-chart-view')
-    if (chartEl) {
-      const chartBlob = await captureElement('export-chart-view')
-      await savePng(chartBlob, `${prefix}_3_charts.png`)
-    }
-  }
-}
-
-async function renderSummaryOffscreen(data: ProjectData): Promise<Blob> {
-  const container = document.createElement('div')
-  container.style.cssText = 'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1200px;background:#fff;padding:32px;font-family:sans-serif;'
-
-  const title = document.createElement('h2')
-  title.textContent = `${data.projectName} — サマリー`
-  title.style.cssText = 'font-size:18px;font-weight:bold;margin-bottom:16px;color:#111;'
-  container.appendChild(title)
-
-  // Status summary cards
-  const statusRow = document.createElement('div')
-  statusRow.style.cssText = 'display:flex;gap:16px;margin-bottom:24px;'
-  for (const opt of data.settings.statusOptions) {
-    const count = data.systems.filter((s) => s.status === opt.id).length
-    const card = document.createElement('div')
-    card.style.cssText = 'flex:1;border:1px solid #e4e4e7;border-radius:8px;padding:16px;text-align:center;'
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">
-        <span style="width:12px;height:12px;border-radius:50%;background:${opt.color};display:inline-block;"></span>
-        <span style="font-size:13px;color:#666;">${opt.label}</span>
-      </div>
-      <p style="font-size:28px;font-weight:bold;color:#111;">${count}</p>
-    `
-    statusRow.appendChild(card)
-  }
-  container.appendChild(statusRow)
-
-  // System cards grid
-  const grid = document.createElement('div')
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;'
-
-  for (const system of data.systems) {
-    const statusOpt = data.settings.statusOptions.find((o) => o.id === system.status)
-    const phaseOpt = data.settings.phaseOptions.find((o) => o.id === system.phase)
-    const openIssues = system.issues.filter((i) => i.status !== 'closed').length
-    const openRisks = system.keyItems.filter((k) => k.type === 'risk' && k.status !== 'closed').length
-
-    const card = document.createElement('div')
-    card.style.cssText = 'border:1px solid #e4e4e7;border-radius:8px;padding:12px;'
-
-    let badgeHtml = ''
-    if (statusOpt) {
-      badgeHtml = `<span style="font-size:11px;padding:2px 8px;border-radius:12px;background:${statusOpt.color}20;color:${statusOpt.color};">${statusOpt.label}</span>`
-    }
-
-    let metaHtml = ''
-    if (phaseOpt) metaHtml += `<span>フェーズ: ${phaseOpt.label}</span>`
-    metaHtml += `<span>担当: ${system.owner}</span>`
-
-    let countsHtml = ''
-    if (openIssues > 0) countsHtml += `<span style="color:#d97706;">Issue: ${openIssues}件</span>`
-    if (openRisks > 0) countsHtml += `<span style="color:#dc2626;margin-left:8px;">リスク: ${openRisks}件</span>`
-
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-weight:500;font-size:14px;">${system.name}</span>
-        ${badgeHtml}
-      </div>
-      <div style="display:flex;gap:12px;font-size:11px;color:#888;margin-bottom:4px;">${metaHtml}</div>
-      <div style="font-size:11px;">${countsHtml}</div>
-      ${system.comment ? `<p style="font-size:11px;color:#888;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${system.comment}</p>` : ''}
-    `
-    grid.appendChild(card)
-  }
-  container.appendChild(grid)
-
-  document.body.appendChild(container)
-  try {
-    const dataUrl = await toPng(container, { backgroundColor: '#ffffff', pixelRatio: 2 })
-    const res = await fetch(dataUrl)
-    return res.blob()
-  } finally {
-    document.body.removeChild(container)
-  }
+  const blob = await renderItemListOffscreen(projectData)
+  await savePng(blob, filename)
 }
 
 const typeLabelsExport: Record<string, string> = {

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Footer } from '@/components/layout/footer'
-import { ExportChartView } from '@/components/export/export-chart'
 import { useProjectData } from '@/hooks/use-project'
 import { useProjectStore } from '@/stores/project-store'
 import { importProjectData } from '@/lib/import'
@@ -64,8 +63,6 @@ export function AppShell({ children }: AppShellProps) {
         </main>
       </div>
       {projectData && <Footer projectData={projectData} />}
-      {/* オフスクリーンのエクスポート用チャート */}
-      {projectData && <ExportChartView />}
     </div>
   )
 }
