@@ -64,20 +64,11 @@ export async function exportProjectDataAsJson(data: ProjectData): Promise<void> 
   }
 }
 
-export async function exportSummaryAsPng(
-  elementId: string,
-  projectName: string,
-): Promise<void> {
-  const blob = await captureElement(elementId)
-  const date = new Date().toISOString().slice(0, 10)
-  await savePng(blob, `${projectName}_summary_${date}.png`)
-}
-
 /**
- * 3枚のPNGを連続エクスポート
+ * 3枚のPNGを連続エクスポート（全てオフスクリーン生成、どのタブからでも実行可能）
  * 1. サマリービュー
- * 2. Issueリスト（オフスクリーン生成）
- * 3. 推移グラフ
+ * 2. アイテムリスト
+ * 3. 推移グラフ（スナップショットがない場合はスキップ）
  */
 export async function exportAllPngs(
   projectData: ProjectData,
@@ -96,13 +87,16 @@ export async function exportAllPngs(
   const itemListBlob = await renderItemListOffscreen(projectData)
   await savePng(itemListBlob, `${prefix}_2_items.png`)
 
-  // 3. 推移グラフ
-  onStatus?.('推移グラフをエクスポート中...')
-  try {
-    const chartBlob = await captureElement('export-chart-view')
-    await savePng(chartBlob, `${prefix}_3_charts.png`)
-  } catch {
-    throw new Error('推移グラフのキャプチャに失敗しました。')
+  // 3. 推移グラフ（スナップショットがある場合のみ）
+  if (projectData.weeklySnapshots.length > 0) {
+    onStatus?.('推移グラフをエクスポート中...')
+    // オフスクリーンチャートが描画されるまで少し待つ
+    await new Promise((r) => setTimeout(r, 500))
+    const chartEl = document.getElementById('export-chart-view')
+    if (chartEl) {
+      const chartBlob = await captureElement('export-chart-view')
+      await savePng(chartBlob, `${prefix}_3_charts.png`)
+    }
   }
 }
 
