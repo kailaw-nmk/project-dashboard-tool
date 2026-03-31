@@ -95,10 +95,10 @@ export async function exportAllPngs(
     throw new Error('サマリービューのキャプチャに失敗しました。概要 > サマリータブを表示してください。')
   }
 
-  // 2. Issueリスト（オフスクリーンDOM生成）
-  onStatus?.('Issueリストをエクス��ート中...')
-  const issueListBlob = await renderIssueListOffscreen(projectData)
-  await savePng(issueListBlob, `${prefix}_2_issues.png`)
+  // 2. アイテムリスト（オフスクリーンDOM生成）
+  onStatus?.('アイテムリストをエクスポート中...')
+  const itemListBlob = await renderItemListOffscreen(projectData)
+  await savePng(itemListBlob, `${prefix}_2_items.png`)
 
   // 3. 推移グラフ
   onStatus?.('推移グラフをエクスポート中...')
@@ -110,62 +110,107 @@ export async function exportAllPngs(
   }
 }
 
-async function renderIssueListOffscreen(data: ProjectData): Promise<Blob> {
+const typeLabelsExport: Record<string, string> = {
+  issue: 'Issue',
+  milestone: 'マイルストーン',
+  risk: 'リスク',
+  decision: '決定事項',
+  dependency: '依存関係',
+}
+const typeColorsExport: Record<string, string> = {
+  issue: '#2563eb',
+  milestone: '#9333ea',
+  risk: '#dc2626',
+  decision: '#059669',
+  dependency: '#ea580c',
+}
+const statusLabelsExport: Record<string, string> = { open: '未対応', 'in-progress': '対応中', closed: '完了' }
+const priorityLabelsExport: Record<string, string> = { high: '高', medium: '中', low: '低' }
+const priorityColorsExport: Record<string, string> = { high: '#dc2626', medium: '#d97706', low: '#6b7280' }
+
+async function renderItemListOffscreen(data: ProjectData): Promise<Blob> {
   const container = document.createElement('div')
-  container.id = 'export-issue-list'
-  container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1200px;background:#fff;padding:32px;font-family:sans-serif;'
+  container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1400px;background:#fff;padding:32px;font-family:sans-serif;'
 
   const title = document.createElement('h2')
-  title.textContent = `${data.projectName} — Issue一覧`
+  title.textContent = `${data.projectName} — アイテム一覧`
   title.style.cssText = 'font-size:18px;font-weight:bold;margin-bottom:16px;color:#111;'
   container.appendChild(title)
 
-  const statusLabels: Record<string, string> = { open: '未対応', 'in-progress': '対応中', closed: '完了' }
-  const priorityLabels: Record<string, string> = { high: '高', medium: '中', low: '低' }
-  const priorityColors: Record<string, string> = { high: '#dc2626', medium: '#d97706', low: '#6b7280' }
+  // Table header
+  const thead = document.createElement('div')
+  thead.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:11px;font-weight:500;color:#888;border-bottom:2px solid #e4e4e7;'
+  for (const [label, width] of [['タイプ','90px'],['タイトル','1fr'],['ステータス','60px'],['優先度','40px'],['主担当','80px'],['関係者','100px'],['期限','80px']] as const) {
+    const th = document.createElement('span')
+    th.textContent = label
+    th.style.cssText = `${width === '1fr' ? 'flex:1;' : `min-width:${width};`}`
+    thead.appendChild(th)
+  }
+  container.appendChild(thead)
 
   for (const system of data.systems) {
-    const openIssues = system.issues.filter((i) => i.status !== 'closed')
-    if (openIssues.length === 0) continue
+    type Item = { type: string; title: string; status: string; priority?: string; assignee: string; stakeholders: string; dueDate: string }
+    const items: Item[] = []
+
+    for (const issue of system.issues.filter((i) => i.status !== 'closed')) {
+      items.push({ type: 'issue', title: issue.title, status: issue.status, priority: issue.priority, assignee: issue.assignee, stakeholders: (issue as Record<string, unknown>).stakeholders as string ?? '', dueDate: issue.dueDate })
+    }
+    for (const ki of system.keyItems.filter((k) => k.status !== 'closed')) {
+      items.push({ type: ki.type, title: ki.title, status: ki.status, assignee: (ki as Record<string, unknown>).assignee as string ?? '', stakeholders: (ki as Record<string, unknown>).stakeholders as string ?? '', dueDate: ki.dueDate ?? '' })
+    }
+    if (items.length === 0) continue
 
     const sysHeader = document.createElement('div')
-    sysHeader.style.cssText = 'font-size:14px;font-weight:600;margin:12px 0 6px;padding:4px 8px;background:#f4f4f5;border-radius:4px;color:#333;'
-    sysHeader.textContent = `${system.name} (${openIssues.length}件)`
+    sysHeader.style.cssText = 'font-size:13px;font-weight:600;margin:12px 0 4px;padding:4px 8px;background:#f4f4f5;border-radius:4px;color:#333;'
+    sysHeader.textContent = `${system.name} (${items.length}件)`
     container.appendChild(sysHeader)
 
-    for (const issue of openIssues) {
+    for (const item of items) {
       const row = document.createElement('div')
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:13px;border-bottom:1px solid #e4e4e7;color:#333;'
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 8px;font-size:12px;border-bottom:1px solid #e4e4e7;color:#333;'
 
-      const priorityBadge = document.createElement('span')
-      priorityBadge.textContent = priorityLabels[issue.priority] ?? issue.priority
-      priorityBadge.style.cssText = `font-size:11px;padding:1px 6px;border-radius:3px;color:#fff;background:${priorityColors[issue.priority] ?? '#888'};`
-      row.appendChild(priorityBadge)
-
-      const statusSpan = document.createElement('span')
-      statusSpan.textContent = statusLabels[issue.status] ?? issue.status
-      statusSpan.style.cssText = 'font-size:11px;color:#666;min-width:40px;'
-      row.appendChild(statusSpan)
+      const typeBadge = document.createElement('span')
+      typeBadge.textContent = typeLabelsExport[item.type] ?? item.type
+      const tc = typeColorsExport[item.type] ?? '#888'
+      typeBadge.style.cssText = `font-size:10px;padding:1px 5px;border:1px solid ${tc};border-radius:3px;color:${tc};min-width:90px;text-align:center;`
+      row.appendChild(typeBadge)
 
       const titleSpan = document.createElement('span')
-      titleSpan.textContent = issue.title
-      titleSpan.style.cssText = 'flex:1;'
+      titleSpan.textContent = item.title
+      titleSpan.style.cssText = 'flex:1;font-weight:500;'
       row.appendChild(titleSpan)
 
-      if (issue.assignee) {
-        const assignee = document.createElement('span')
-        assignee.textContent = issue.assignee
-        assignee.style.cssText = 'font-size:11px;color:#888;'
-        row.appendChild(assignee)
-      }
+      const statusSpan = document.createElement('span')
+      statusSpan.textContent = statusLabelsExport[item.status] ?? item.status
+      statusSpan.style.cssText = 'font-size:11px;color:#666;min-width:60px;'
+      row.appendChild(statusSpan)
 
-      if (issue.dueDate) {
-        const due = document.createElement('span')
-        due.textContent = issue.dueDate
-        const isOverdue = new Date(issue.dueDate) < new Date()
-        due.style.cssText = `font-size:11px;color:${isOverdue ? '#dc2626' : '#888'};`
-        row.appendChild(due)
+      const prioSpan = document.createElement('span')
+      prioSpan.style.cssText = 'min-width:40px;'
+      if (item.priority) {
+        prioSpan.textContent = priorityLabelsExport[item.priority] ?? ''
+        prioSpan.style.cssText += `font-size:10px;padding:1px 5px;border-radius:3px;color:#fff;background:${priorityColorsExport[item.priority] ?? '#888'};text-align:center;`
       }
+      row.appendChild(prioSpan)
+
+      const assigneeSpan = document.createElement('span')
+      assigneeSpan.textContent = item.assignee
+      assigneeSpan.style.cssText = 'font-size:11px;font-weight:700;min-width:80px;'
+      row.appendChild(assigneeSpan)
+
+      const stakeSpan = document.createElement('span')
+      stakeSpan.textContent = item.stakeholders
+      stakeSpan.style.cssText = 'font-size:11px;color:#888;min-width:100px;'
+      row.appendChild(stakeSpan)
+
+      const dueSpan = document.createElement('span')
+      dueSpan.style.cssText = 'font-size:11px;min-width:80px;'
+      if (item.dueDate) {
+        const overdue = new Date(item.dueDate) < new Date()
+        dueSpan.textContent = item.dueDate
+        dueSpan.style.cssText += `color:${overdue ? '#dc2626;font-weight:700' : '#888'};`
+      }
+      row.appendChild(dueSpan)
 
       container.appendChild(row)
     }
