@@ -52,18 +52,37 @@ export async function exportProjectDataAsJson(data: ProjectData): Promise<void> 
 }
 
 /**
- * アイテムリストのPNGをエクスポート
+ * ユーザーが選択したフォルダ内に dashboard_yyyymmdd サブフォルダを作成し、PNGを保存
  */
 export async function exportAllPngs(
   projectData: ProjectData,
   onStatus?: (msg: string) => void,
 ): Promise<void> {
-  const date = new Date().toISOString().slice(0, 10)
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const folderName = `dashboard_${date}`
   const filename = `Dashboard_${projectData.projectName}_${date}_items.png`
 
   onStatus?.('アイテムリストをエクスポート中...')
   const blob = await renderItemListOffscreen(projectData)
-  await savePng(blob, filename)
+
+  // File System Access API でフォルダ選択 → サブフォルダ作成 → 保存
+  if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
+    try {
+      const parentDir = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
+      const subDir = await parentDir.getDirectoryHandle(folderName, { create: true })
+      const fileHandle = await subDir.getFileHandle(filename, { create: true })
+      const writable = await fileHandle.createWritable()
+      await writable.write(blob)
+      await writable.close()
+      return
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return // user cancelled
+      // fall through to legacy download
+    }
+  }
+
+  // フォールバック: 通常ダウンロード
+  legacyDownload(blob, filename)
 }
 
 const typeLabelsExport: Record<string, string> = {
