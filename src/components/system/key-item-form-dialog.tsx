@@ -78,6 +78,8 @@ export function KeyItemFormDialog({
           ? {
               type: editData.type,
               title: editData.title,
+              assignee: editData.assignee ?? '',
+              stakeholders: editData.stakeholders ?? '',
               description: editData.description,
               dueDate: editData.dueDate ?? '',
               status: editData.status,
@@ -86,6 +88,8 @@ export function KeyItemFormDialog({
           : {
               type: defaultType,
               title: '',
+              assignee: '',
+              stakeholders: '',
               description: '',
               dueDate: '',
               status: 'open',
@@ -168,6 +172,14 @@ export function KeyItemFormDialog({
               <label className="mb-1 block text-sm font-medium">タイトル *</label>
               <Input {...register('title')} />
               {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">主担当</label>
+              <Input {...register('assignee')} />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">関係者</label>
+              <Input {...register('stakeholders')} placeholder="カンマ区切りで複数入力可" />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">説明</label>

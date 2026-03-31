@@ -158,7 +158,10 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
             )
           )}
         </div>
-        {issue.assignee && <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue.assignee}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {issue.assignee && <span style={{ fontWeight: 700 }}>{issue.assignee}</span>}
+          {issue.stakeholders && <span style={{ opacity: 0.7 }}>{issue.stakeholders}</span>}
+        </div>
       </div>
     </div>
   )
@@ -222,8 +225,17 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
             </span>
           )}
         </div>
-        {keyItem.dueDate && <span>{keyItem.dueDate}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+          {keyItem.dueDate && <span>{keyItem.dueDate}</span>}
+        </div>
       </div>
+      {/* Row 4: assignee + stakeholders */}
+      {(keyItem.assignee || keyItem.stakeholders) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em', fontSize: '0.75em', marginTop: '0.2em' }} className="text-muted-foreground">
+          {keyItem.assignee && <span style={{ fontWeight: 700 }}>{keyItem.assignee}</span>}
+          {keyItem.stakeholders && <span style={{ opacity: 0.7 }}>{keyItem.stakeholders}</span>}
+        </div>
+      )}
     </div>
   )
 }

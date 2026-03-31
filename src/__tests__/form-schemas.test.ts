@@ -63,6 +63,7 @@ describe('IssueFormSchema', () => {
       status: 'open',
       priority: 'high',
       assignee: '',
+      stakeholders: '',
       dueDate: '',
       description: '',
       externalLink: '',
@@ -112,6 +113,8 @@ describe('KeyItemFormSchema', () => {
     const result = KeyItemFormSchema.safeParse({
       type: 'milestone',
       title: 'テスト',
+      assignee: '',
+      stakeholders: '',
       description: '',
       status: 'open',
       externalLink: '',
@@ -123,6 +126,8 @@ describe('KeyItemFormSchema', () => {
     const result = KeyItemFormSchema.safeParse({
       type: 'risk',
       title: 'テスト',
+      assignee: '',
+      stakeholders: '',
       description: '',
       dueDate: '2026-03-01',
       status: 'in-progress',

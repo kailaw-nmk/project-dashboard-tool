@@ -14,6 +14,7 @@ export const IssueFormSchema = z.object({
   status: z.enum(['open', 'in-progress', 'closed']),
   priority: z.enum(['high', 'medium', 'low']),
   assignee: z.string(),
+  stakeholders: z.string(),
   dueDate: z.string(),
   description: z.string(),
   externalLink: z.string(),
@@ -22,6 +23,8 @@ export const IssueFormSchema = z.object({
 export const KeyItemFormSchema = z.object({
   type: z.enum(['milestone', 'risk', 'decision', 'dependency']),
   title: z.string().min(1, 'タイトルは必須です'),
+  assignee: z.string(),
+  stakeholders: z.string(),
   description: z.string(),
   dueDate: z.string().optional(),
   status: z.enum(['open', 'in-progress', 'closed']),
