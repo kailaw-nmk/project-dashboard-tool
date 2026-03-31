@@ -102,7 +102,7 @@ export async function exportAllPngs(
 
 async function renderSummaryOffscreen(data: ProjectData): Promise<Blob> {
   const container = document.createElement('div')
-  container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1200px;background:#fff;padding:32px;font-family:sans-serif;'
+  container.style.cssText = 'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1200px;background:#fff;padding:32px;font-family:sans-serif;'
 
   const title = document.createElement('h2')
   title.textContent = `${data.projectName} — サマリー`
@@ -196,7 +196,7 @@ const priorityColorsExport: Record<string, string> = { high: '#dc2626', medium: 
 
 async function renderItemListOffscreen(data: ProjectData): Promise<Blob> {
   const container = document.createElement('div')
-  container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1400px;background:#fff;padding:32px;font-family:sans-serif;'
+  container.style.cssText = 'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1400px;background:#fff;padding:32px;font-family:sans-serif;'
 
   const title = document.createElement('h2')
   title.textContent = `${data.projectName} — アイテム一覧`

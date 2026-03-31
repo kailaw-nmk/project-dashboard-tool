@@ -45,7 +45,7 @@ export function ExportChartView() {
   return (
     <div
       id="export-chart-view"
-      style={{ position: 'absolute', left: '-9999px', top: 0, width: 1200, background: '#fff', padding: 32 }}
+      style={{ position: 'fixed', left: 0, top: 0, width: 1200, background: '#fff', padding: 32, zIndex: -9999, pointerEvents: 'none' }}
     >
       <h2 style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>ステータス推移</h2>
       <ResponsiveContainer width="100%" height={300}>
