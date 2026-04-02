@@ -285,6 +285,12 @@ export function SettingsView() {
             {keyItemTypes.map((opt, i) => (
               <div key={opt.id} className="flex items-center gap-2">
                 <Input
+                  value={opt.id}
+                  onChange={(e) => updateKeyItemType(i, { id: e.target.value })}
+                  className="w-28"
+                  placeholder="ID"
+                />
+                <Input
                   value={opt.icon}
                   onChange={(e) => updateKeyItemType(i, { icon: e.target.value })}
                   className="w-16"
