@@ -5,6 +5,7 @@ import { Flame } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
+import { getCurrentWeek } from '@/lib/week'
 import type { System, Issue, KeyItem } from '@/types/schema'
 
 type ItemCategory = string
@@ -64,6 +65,13 @@ type FlatItem = {
   assignee: string
   stakeholders: string
   dueDate: string
+  weeklyComment: string
+}
+
+function getWeeklyComment(updates: { week: string; content: string }[] | undefined): string {
+  if (!updates) return ''
+  const current = getCurrentWeek()
+  return updates.find((u) => u.week === current)?.content ?? ''
 }
 
 function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selectedSystemId: string | null, statusFilter?: Set<string>): FlatItem[] {
@@ -86,6 +94,7 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
           assignee: issue.assignee,
           stakeholders: issue.stakeholders ?? '',
           dueDate: issue.dueDate,
+          weeklyComment: getWeeklyComment(issue.weeklyUpdates),
         })
       }
     }
@@ -104,6 +113,7 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
         assignee: ki.assignee ?? '',
         stakeholders: ki.stakeholders ?? '',
         dueDate: ki.dueDate ?? '',
+        weeklyComment: getWeeklyComment(ki.weeklyUpdates),
       })
     }
   }
@@ -185,6 +195,9 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
             </span>
           )}
         </td>
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} className="text-muted-foreground">
+          {item.weeklyComment}
+        </td>
       </tr>
     )
   }
@@ -205,6 +218,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
               <th className="text-muted-foreground" style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>優先度</th>
               <th className="text-muted-foreground" style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>担当</th>
               <th className="text-muted-foreground" style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>期限</th>
+              <th className="text-muted-foreground" style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>今週のコメント</th>
             </tr>
           </thead>
           <tbody>
@@ -213,7 +227,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
                   <React.Fragment key={sysId}>
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         style={{ padding: '0.5em 0.6em', fontWeight: 600, fontSize: '0.85em' }}
                         className="bg-muted"
                       >
