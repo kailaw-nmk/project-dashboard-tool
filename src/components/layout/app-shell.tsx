@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Footer } from '@/components/layout/footer'
+import { PngExportDialog, type ExportCategory } from '@/components/export/png-export-dialog'
 import { useProjectData } from '@/hooks/use-project'
 import { useProjectStore } from '@/stores/project-store'
 import { importProjectData } from '@/lib/import'
@@ -18,6 +19,7 @@ export function AppShell({ children }: AppShellProps) {
   const setProjectData = useProjectStore((s) => s.setProjectData)
   const [error, setError] = useState<string | null>(null)
   const [exportStatus, setExportStatus] = useState<string | null>(null)
+  const [pngDialogOpen, setPngDialogOpen] = useState(false)
 
   const handleImport = async (file: File) => {
     try {
@@ -35,11 +37,16 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
-  const handleExportPng = async () => {
+  const handleExportPngClick = () => {
+    if (!projectData) return
+    setPngDialogOpen(true)
+  }
+
+  const handleExportPng = async (categories: Set<ExportCategory>) => {
     if (!projectData) return
     try {
       setExportStatus('PNGエクスポート中...')
-      await exportAllPngs(projectData, setExportStatus)
+      await exportAllPngs(projectData, setExportStatus, categories)
       setExportStatus(null)
     } catch (err) {
       setExportStatus(null)
@@ -49,7 +56,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen flex-col">
-      <Header projectData={projectData} onImport={handleImport} onExport={handleExport} onExportPng={handleExportPng} />
+      <Header projectData={projectData} onImport={handleImport} onExport={handleExport} onExportPng={handleExportPngClick} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex flex-1 flex-col overflow-auto bg-muted p-6">
@@ -63,6 +70,11 @@ export function AppShell({ children }: AppShellProps) {
         </main>
       </div>
       {projectData && <Footer projectData={projectData} />}
+      <PngExportDialog
+        open={pngDialogOpen}
+        onOpenChange={setPngDialogOpen}
+        onExport={handleExportPng}
+      />
     </div>
   )
 }

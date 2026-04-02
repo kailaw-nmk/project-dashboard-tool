@@ -50,19 +50,22 @@ export function exportProjectDataAsJson(data: ProjectData): void {
   legacyDownload(blob, filename)
 }
 
+export type ExportCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+
 /**
  * ユーザーが選択したフォルダ内に dashboard_yyyymmdd サブフォルダを作成し、PNGを保存
  */
 export async function exportAllPngs(
   projectData: ProjectData,
   onStatus?: (msg: string) => void,
+  categories?: Set<ExportCategory>,
 ): Promise<void> {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const folderName = `dashboard_${date}`
   const filename = `Dashboard_${projectData.projectName}_${date}_items.png`
 
   onStatus?.('アイテムリストをエクスポート中...')
-  const blob = await renderItemListOffscreen(projectData)
+  const blob = await renderItemListOffscreen(projectData, categories)
 
   // File System Access API でフォルダ選択 → サブフォルダ作成 → 保存
   if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
@@ -102,7 +105,7 @@ const statusLabelsExport: Record<string, string> = { open: '未対応', 'in-prog
 const priorityLabelsExport: Record<string, string> = { high: '高', medium: '中', low: '低' }
 const priorityColorsExport: Record<string, string> = { high: '#dc2626', medium: '#d97706', low: '#6b7280' }
 
-async function renderItemListOffscreen(data: ProjectData): Promise<Blob> {
+async function renderItemListOffscreen(data: ProjectData, categories?: Set<ExportCategory>): Promise<Blob> {
   const container = document.createElement('div')
   container.style.cssText = 'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1400px;background:#fff;padding:32px;font-family:sans-serif;'
 
@@ -126,10 +129,13 @@ async function renderItemListOffscreen(data: ProjectData): Promise<Blob> {
     type Item = { type: string; title: string; status: string; priority?: string; assignee: string; stakeholders: string; dueDate: string }
     const items: Item[] = []
 
-    for (const issue of system.issues.filter((i) => i.status !== 'closed')) {
-      items.push({ type: 'issue', title: issue.title, status: issue.status, priority: issue.priority, assignee: issue.assignee, stakeholders: (issue as Record<string, unknown>).stakeholders as string ?? '', dueDate: issue.dueDate })
+    if (!categories || categories.has('issue')) {
+      for (const issue of system.issues.filter((i) => i.status !== 'closed')) {
+        items.push({ type: 'issue', title: issue.title, status: issue.status, priority: issue.priority, assignee: issue.assignee, stakeholders: (issue as Record<string, unknown>).stakeholders as string ?? '', dueDate: issue.dueDate })
+      }
     }
     for (const ki of system.keyItems.filter((k) => k.status !== 'closed')) {
+      if (categories && !categories.has(ki.type as ExportCategory)) continue
       items.push({ type: ki.type, title: ki.title, status: ki.status, assignee: (ki as Record<string, unknown>).assignee as string ?? '', stakeholders: (ki as Record<string, unknown>).stakeholders as string ?? '', dueDate: ki.dueDate ?? '' })
     }
     if (items.length === 0) continue
