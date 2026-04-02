@@ -10,12 +10,15 @@ async function saveWithPicker(blob: Blob, suggestedName: string, accept: Record<
         suggestedName,
         types: [{ accept }],
       })
-      const writable = await handle.createWritable()
+      const writable = await handle.createWritable({ keepExistingData: false })
       await writable.write(blob)
       await writable.close()
       return true
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return true // user cancelled
+      // ファイルピッカーは開けたが書き込みに失敗 → フォールバック
+      console.error('File write failed, falling back to download:', e)
+      return false
     }
   }
   return false
@@ -40,7 +43,9 @@ async function savePng(blob: Blob, filename: string): Promise<void> {
 }
 
 export async function exportProjectDataAsJson(data: ProjectData): Promise<void> {
+  if (!data) throw new Error('エクスポートするデータがありません。')
   const json = JSON.stringify(data, null, 2)
+  if (!json || json.length < 10) throw new Error('データのシリアライズに失敗しました。')
   const blob = new Blob([json], { type: 'application/json' })
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const filename = `Dashboard_${data.projectName}_${date}.json`
