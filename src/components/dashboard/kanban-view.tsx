@@ -67,15 +67,35 @@ function getItemCategory(item: KanbanItem): ItemCategory {
   return item.data.type
 }
 
-function groupByStatus(system: System, activeFilters: Set<ItemCategory>) {
+type Priority = 'high' | 'medium' | 'low'
+
+const priorityLabels: Record<Priority, string> = {
+  high: '高',
+  medium: '中',
+  low: '低',
+}
+
+function getItemPriority(item: KanbanItem): Priority | null {
+  if (item.kind === 'issue') return item.data.priority
+  return null
+}
+
+function groupByStatus(system: System, activeFilters: Set<ItemCategory>, priorityFilter: Set<Priority>) {
   const allItems: KanbanItem[] = [
     ...system.issues.map((i) => ({ kind: 'issue' as const, data: i })),
     ...system.keyItems.map((k) => ({ kind: 'keyItem' as const, data: k })),
   ]
 
-  const items = activeFilters.size === 0
+  let items = activeFilters.size === 0
     ? allItems
     : allItems.filter((item) => activeFilters.has(getItemCategory(item)))
+
+  if (priorityFilter.size > 0) {
+    items = items.filter((item) => {
+      const p = getItemPriority(item)
+      return p === null || priorityFilter.has(p) // KeyItemは優先度なしなので常に表示
+    })
+  }
 
   const groups: Record<string, KanbanItem[]> = {
     open: [],
@@ -101,11 +121,12 @@ const statusSectionLabels: Record<string, string> = {
 
 type AddItemType = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
 
-function SortableSystemColumn({ system, statusOption, onClick, activeFilters, linkMode, linkSourceId, onLinkClick }: {
+function SortableSystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
+  priorityFilter: Set<Priority>
   linkMode?: boolean
   linkSourceId?: string | null
   onLinkClick?: (info: LinkSourceTarget) => void
@@ -124,6 +145,7 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters, li
         statusOption={statusOption}
         onClick={onClick}
         activeFilters={activeFilters}
+        priorityFilter={priorityFilter}
         dragListeners={listeners}
         linkMode={linkMode}
         linkSourceId={linkSourceId}
@@ -133,11 +155,12 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters, li
   )
 }
 
-function SystemColumn({ system, statusOption, onClick, activeFilters, dragListeners, linkMode, linkSourceId, onLinkClick }: {
+function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, dragListeners, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
+  priorityFilter: Set<Priority>
   dragListeners?: Record<string, Function>
   linkMode?: boolean
   linkSourceId?: string | null
@@ -150,7 +173,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
-  const groups = groupByStatus(system, activeFilters)
+  const groups = groupByStatus(system, activeFilters, priorityFilter)
   const hasItems = groups.open.length > 0 || groups['in-progress'].length > 0 || groups.closed.length > 0
 
   const handleAddItem = (type: AddItemType) => {
@@ -344,9 +367,10 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, dragListen
 const allCategories: ItemCategory[] = ['issue', 'milestone', 'risk', 'decision', 'dependency']
 
 /** 個別システムビュー: ステータス別3カラム */
-function SingleSystemKanban({ system, activeFilters }: {
+function SingleSystemKanban({ system, activeFilters, priorityFilter }: {
   system: System
   activeFilters: Set<ItemCategory>
+  priorityFilter: Set<Priority>
 }) {
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
@@ -355,7 +379,7 @@ function SingleSystemKanban({ system, activeFilters }: {
   const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
 
-  const groups = groupByStatus(system, activeFilters)
+  const groups = groupByStatus(system, activeFilters, priorityFilter)
 
   const handleAddItem = (type: AddItemType) => {
     if (type === 'issue') {
@@ -468,6 +492,7 @@ export function KanbanView() {
   const setSelectedSystemId = useProjectStore((s) => s.setSelectedSystemId)
   const reorderSystems = useProjectStore((s) => s.reorderSystems)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
+  const [priorityFilter, setPriorityFilter] = useState<Set<Priority>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
   const [viewStyle, setViewStyle] = useState<'card' | 'table'>('card')
   const [fontSize, setFontSize] = useState(100)
@@ -533,6 +558,17 @@ export function KanbanView() {
       return next
     })
   }
+
+  const togglePriority = (p: Priority) => {
+    setPriorityFilter((prev) => {
+      const next = new Set(prev)
+      if (next.has(p)) { next.delete(p) } else { next.add(p) }
+      return next
+    })
+  }
+
+  const allPriorities: Priority[] = ['high', 'medium', 'low']
+  const priorityColors: Record<Priority, string> = { high: 'bg-red-500', medium: 'bg-amber-500', low: 'bg-zinc-400' }
 
   if (!settings) return null
 
@@ -646,6 +682,31 @@ export function KanbanView() {
           )}
         </div>
 
+        {/* Priority filter */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">優先度:</span>
+          {allPriorities.map((p) => {
+            const isActive = priorityFilter.has(p)
+            return (
+              <Button
+                key={p}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => togglePriority(p)}
+              >
+                <span className={`inline-block h-2 w-2 rounded-full ${priorityColors[p]}`} />
+                {priorityLabels[p]}
+              </Button>
+            )
+          })}
+          {priorityFilter.size > 0 && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setPriorityFilter(new Set())}>
+              クリア
+            </Button>
+          )}
+        </div>
+
         {/* Separator */}
         <div className="h-5 w-px bg-border" />
 
@@ -681,6 +742,7 @@ export function KanbanView() {
             key={selectedSystem.id}
             system={selectedSystem}
             activeFilters={activeFilters}
+            priorityFilter={priorityFilter}
           />
         ) : (
           /* All systems: horizontal columns with drag reorder */
@@ -698,6 +760,7 @@ export function KanbanView() {
                       linkSourceId={linkSource?.itemId ?? null}
                       onLinkClick={handleLinkClick}
                       activeFilters={activeFilters}
+                      priorityFilter={priorityFilter}
                     />
                   ))}
                 </div>
