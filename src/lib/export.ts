@@ -45,8 +45,10 @@ async function savePng(blob: Blob, filename: string): Promise<void> {
 export function exportProjectDataAsJson(data: ProjectData): void {
   const json = JSON.stringify(data, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const filename = `Dashboard_${data.projectName}_${date}.json`
+  const now = new Date()
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '')
+  const time = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0')
+  const filename = `Dashboard_${data.projectName}_${date}_${time}.json`
   legacyDownload(blob, filename)
 }
 
