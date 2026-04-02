@@ -1,8 +1,9 @@
 'use client'
 
 import { ExternalLink, Flame, StickyNote } from 'lucide-react'
+import { useProjectStore } from '@/stores/project-store'
 import { getCurrentWeek } from '@/lib/week'
-import type { Issue, KeyItem } from '@/types/schema'
+import type { Issue, KeyItem, KeyItemType } from '@/types/schema'
 
 function isOverdue(dueDate: string | undefined, status: string): boolean {
   if (!dueDate || status === 'closed') return false
@@ -147,15 +148,13 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
           {statusInfo && (
             <span style={{ color: statusInfo.color }}>● {statusInfo.label}</span>
           )}
-          {issue.dueDate && (
-            overdue ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.2em', color: '#dc2626' }} title="期限超過">
-                <Flame style={{ width: '1em', height: '1em' }} />
-                <span>{issue.dueDate}</span>
-              </span>
-            ) : (
-              <span>{issue.dueDate}</span>
-            )
+          {(issue.startDate || issue.dueDate) && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.2em', color: overdue ? '#dc2626' : undefined }}>
+              {overdue && <Flame style={{ width: '1em', height: '1em' }} />}
+              {issue.startDate && issue.dueDate
+                ? `${issue.startDate} 〜 ${issue.dueDate}`
+                : issue.dueDate || issue.startDate}
+            </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -177,8 +176,10 @@ interface KeyItemCardProps {
 }
 
 export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: KeyItemCardProps) {
+  const keyItemTypes = useProjectStore((s) => s.projectData?.settings.keyItemTypes)
   const statusInfo = statusLabels[keyItem.status]
-  const typeLabel = keyItemTypeLabels[keyItem.type] ?? keyItem.type
+  const customType = keyItemTypes?.find((t) => t.id === keyItem.type)
+  const typeLabel = customType?.label ?? keyItemTypeLabels[keyItem.type] ?? keyItem.type
   const typeColor = keyItemTypeColors[keyItem.type] ?? '#6b7280'
   const hasUpdate = (keyItem.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
   const overdue = isOverdue(keyItem.dueDate, keyItem.status)
@@ -226,7 +227,13 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3em' }}>
-          {keyItem.dueDate && <span>{keyItem.dueDate}</span>}
+          {(keyItem.startDate || keyItem.dueDate) && (
+            <span>
+              {keyItem.startDate && keyItem.dueDate
+                ? `${keyItem.startDate} 〜 ${keyItem.dueDate}`
+                : keyItem.dueDate || keyItem.startDate}
+            </span>
+          )}
         </div>
       </div>
       {/* Row 4: assignee + stakeholders */}

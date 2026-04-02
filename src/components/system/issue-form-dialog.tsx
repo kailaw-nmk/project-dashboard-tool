@@ -73,6 +73,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               priority: editData.priority,
               assignee: editData.assignee,
               stakeholders: editData.stakeholders ?? '',
+              startDate: editData.startDate ?? '',
               dueDate: editData.dueDate,
               description: editData.description,
               externalLink: editData.externalLink ?? '',
@@ -83,6 +84,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               priority: 'medium',
               assignee: '',
               stakeholders: '',
+              startDate: '',
               dueDate: '',
               description: '',
               externalLink: '',
@@ -173,9 +175,15 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
               <label className="mb-1 block text-sm font-medium">関係者</label>
               <Input {...register('stakeholders')} placeholder="カンマ区切りで複数入力可" />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">期限</label>
-              <Input type="date" {...register('dueDate')} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">開始日</label>
+                <Input type="date" {...register('startDate')} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">期限</label>
+                <Input type="date" {...register('dueDate')} />
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">説明</label>

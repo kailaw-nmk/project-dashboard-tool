@@ -64,6 +64,7 @@ describe('IssueFormSchema', () => {
       priority: 'high',
       assignee: '',
       stakeholders: '',
+      startDate: '',
       dueDate: '',
       description: '',
       externalLink: '',
@@ -116,6 +117,7 @@ describe('KeyItemFormSchema', () => {
       assignee: '',
       stakeholders: '',
       description: '',
+      startDate: '',
       status: 'open',
       externalLink: '',
     })
@@ -129,6 +131,7 @@ describe('KeyItemFormSchema', () => {
       assignee: '',
       stakeholders: '',
       description: '',
+      startDate: '',
       dueDate: '2026-03-01',
       status: 'in-progress',
       externalLink: '',

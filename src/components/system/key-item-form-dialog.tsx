@@ -81,6 +81,7 @@ export function KeyItemFormDialog({
               assignee: editData.assignee ?? '',
               stakeholders: editData.stakeholders ?? '',
               description: editData.description,
+              startDate: editData.startDate ?? '',
               dueDate: editData.dueDate ?? '',
               status: editData.status,
               externalLink: editData.externalLink ?? '',
@@ -91,6 +92,7 @@ export function KeyItemFormDialog({
               assignee: '',
               stakeholders: '',
               description: '',
+              startDate: '',
               dueDate: '',
               status: 'open',
               externalLink: '',
@@ -189,9 +191,15 @@ export function KeyItemFormDialog({
                 rows={2}
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">期限</label>
-              <Input type="date" {...register('dueDate')} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">開始日</label>
+                <Input type="date" {...register('startDate')} />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">期限</label>
+                <Input type="date" {...register('dueDate')} />
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">外部リンク</label>
