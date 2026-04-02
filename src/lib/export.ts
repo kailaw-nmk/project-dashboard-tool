@@ -42,18 +42,12 @@ async function savePng(blob: Blob, filename: string): Promise<void> {
   }
 }
 
-export async function exportProjectDataAsJson(data: ProjectData): Promise<void> {
-  if (!data) throw new Error('エクスポートするデータがありません。')
+export function exportProjectDataAsJson(data: ProjectData): void {
   const json = JSON.stringify(data, null, 2)
-  if (!json || json.length < 10) throw new Error('データのシリアライズに失敗しました。')
   const blob = new Blob([json], { type: 'application/json' })
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const filename = `Dashboard_${data.projectName}_${date}.json`
-
-  const saved = await saveWithPicker(blob, filename, { 'application/json': ['.json'] })
-  if (!saved) {
-    legacyDownload(blob, filename)
-  }
+  legacyDownload(blob, filename)
 }
 
 /**
