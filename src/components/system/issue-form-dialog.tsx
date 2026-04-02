@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { useProjectStore } from '@/stores/project-store'
 import { ItemDependenciesSection } from './item-dependencies-section'
-import { WeeklyUpdateSection } from './weekly-update-section'
+import { WeeklyUpdateSection, type WeeklyUpdateSectionHandle } from './weekly-update-section'
 import { useShallow } from 'zustand/react/shallow'
 import { IssueFormSchema, type IssueFormData } from '@/types/form-schemas'
 import type { Issue } from '@/types/schema'
@@ -52,6 +52,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
     useShallow((s) => ({ addIssue: s.addIssue, updateIssue: s.updateIssue, deleteIssue: s.deleteIssue })),
   )
 
+  const weeklyRef = useRef<WeeklyUpdateSectionHandle>(null)
   const isEdit = !!editData
   const {
     register,
@@ -95,6 +96,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
 
   const onSubmit = (data: IssueFormData) => {
     if (isEdit) {
+      weeklyRef.current?.save()
       updateIssue(systemId, editData.id, data)
     } else {
       const issue: Issue = {
@@ -199,6 +201,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
             </div>
             {isEdit && (
               <WeeklyUpdateSection
+                ref={weeklyRef}
                 systemId={systemId}
                 itemId={editData.id}
                 itemKind="issue"

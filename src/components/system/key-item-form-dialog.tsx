@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { useProjectStore } from '@/stores/project-store'
 import { ItemDependenciesSection } from './item-dependencies-section'
-import { WeeklyUpdateSection } from './weekly-update-section'
+import { WeeklyUpdateSection, type WeeklyUpdateSectionHandle } from './weekly-update-section'
 import { useShallow } from 'zustand/react/shallow'
 import { KeyItemFormSchema, type KeyItemFormData } from '@/types/form-schemas'
 import type { KeyItem } from '@/types/schema'
@@ -53,6 +53,7 @@ export function KeyItemFormDialog({
     useShallow((s) => ({ addKeyItem: s.addKeyItem, updateKeyItem: s.updateKeyItem, deleteKeyItem: s.deleteKeyItem, keyItemTypes: s.projectData?.settings.keyItemTypes ?? [] })),
   )
 
+  const weeklyRef = useRef<WeeklyUpdateSectionHandle>(null)
   const isEdit = !!editData
   const {
     register,
@@ -96,6 +97,7 @@ export function KeyItemFormDialog({
 
   const onSubmit = (data: KeyItemFormData) => {
     if (isEdit) {
+      weeklyRef.current?.save()
       updateKeyItem(systemId, editData.id, data)
     } else {
       const keyItem: KeyItem = {
@@ -200,6 +202,7 @@ export function KeyItemFormDialog({
             </div>
             {isEdit && (
               <WeeklyUpdateSection
+                ref={weeklyRef}
                 systemId={systemId}
                 itemId={editData.id}
                 itemKind="keyItem"
