@@ -11,16 +11,9 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useProjectStore } from '@/stores/project-store'
 
-export type ExportCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
-
-const categoryOptions: { id: ExportCategory; label: string }[] = [
-  { id: 'issue', label: 'Issue' },
-  { id: 'milestone', label: 'マイルストーン' },
-  { id: 'risk', label: 'リスク' },
-  { id: 'decision', label: '決定事項' },
-  { id: 'dependency', label: '依存関係' },
-]
+export type ExportCategory = string
 
 interface PngExportDialogProps {
   open: boolean
@@ -29,7 +22,13 @@ interface PngExportDialogProps {
 }
 
 export function PngExportDialog({ open, onOpenChange, onExport }: PngExportDialogProps) {
-  const [selected, setSelected] = useState<Set<ExportCategory>>(new Set(['issue', 'milestone', 'risk', 'decision', 'dependency']))
+  const keyItemTypes = useProjectStore((s) => s.projectData?.settings.keyItemTypes ?? [])
+  const categoryOptions = [
+    { id: 'issue', label: 'Issue' },
+    ...keyItemTypes.map((t) => ({ id: t.id, label: t.label })),
+  ]
+  const allIds = new Set(categoryOptions.map((c) => c.id))
+  const [selected, setSelected] = useState<Set<ExportCategory>>(allIds)
 
   const toggle = (id: ExportCategory) => {
     setSelected((prev) => {
@@ -39,7 +38,7 @@ export function PngExportDialog({ open, onOpenChange, onExport }: PngExportDialo
     })
   }
 
-  const selectAll = () => setSelected(new Set(categoryOptions.map((c) => c.id)))
+  const selectAll = () => setSelected(new Set(categoryOptions.map((c) => c.id as ExportCategory)))
   const selectNone = () => setSelected(new Set())
 
   return (

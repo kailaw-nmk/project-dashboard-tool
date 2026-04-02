@@ -50,7 +50,7 @@ export function exportProjectDataAsJson(data: ProjectData): void {
   legacyDownload(blob, filename)
 }
 
-export type ExportCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+export type ExportCategory = string
 
 /**
  * ユーザーが選択したフォルダ内に dashboard_yyyymmdd サブフォルダを作成し、PNGを保存
@@ -87,12 +87,21 @@ export async function exportAllPngs(
   legacyDownload(blob, filename)
 }
 
-const typeLabelsExport: Record<string, string> = {
+// フォールバック用ハードコードラベル（settingsにない場合のみ使用）
+const typeLabelsExportFallback: Record<string, string> = {
   issue: 'Issue',
   milestone: 'マイルストーン',
   risk: 'リスク',
   decision: '決定事項',
   dependency: '依存関係',
+}
+
+function buildExportTypeLabels(data: ProjectData): Record<string, string> {
+  const labels: Record<string, string> = { issue: 'Issue' }
+  for (const t of data.settings.keyItemTypes) {
+    labels[t.id] = t.label
+  }
+  return { ...typeLabelsExportFallback, ...labels }
 }
 const typeColorsExport: Record<string, string> = {
   issue: '#2563eb',
@@ -106,6 +115,7 @@ const priorityLabelsExport: Record<string, string> = { high: '高', medium: '中
 const priorityColorsExport: Record<string, string> = { high: '#dc2626', medium: '#d97706', low: '#6b7280' }
 
 async function renderItemListOffscreen(data: ProjectData, categories?: Set<ExportCategory>): Promise<Blob> {
+  const typeLabelsExport = buildExportTypeLabels(data)
   const container = document.createElement('div')
   container.style.cssText = 'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1400px;background:#fff;padding:32px;font-family:sans-serif;'
 
