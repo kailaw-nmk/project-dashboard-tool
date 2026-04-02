@@ -3,12 +3,11 @@
 import React, { useState } from 'react'
 import { Flame } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
-import { useShallow } from 'zustand/react/shallow'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import type { System, Issue, KeyItem } from '@/types/schema'
 
-type ItemCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+type ItemCategory = string
 
 const typeLabels: Record<string, string> = {
   issue: 'Issue',
@@ -118,6 +117,10 @@ interface KanbanTableViewProps {
 }
 
 export function KanbanTableView({ systems, activeFilters, selectedSystemId }: KanbanTableViewProps) {
+  const keyItemTypes = useProjectStore((s) => s.projectData?.settings.keyItemTypes ?? [])
+  const dynamicTypeLabels: Record<string, string> = { issue: 'Issue' }
+  for (const t of keyItemTypes) dynamicTypeLabels[t.id] = t.label
+
   const [editingIssue, setEditingIssue] = useState<{ systemId: string; issue: Issue } | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<{ systemId: string; keyItem: KeyItem } | null>(null)
 
@@ -154,7 +157,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId }: Ka
       >
         <td style={{ padding: '0.4em 0.6em' }}>
           <span style={{ fontSize: '0.8em', padding: '0.1em 0.35em', border: `1px solid ${tColor}`, borderRadius: 3, color: tColor, whiteSpace: 'nowrap' }}>
-            {typeLabels[item.type] ?? item.type}
+            {dynamicTypeLabels[item.type] ?? typeLabels[item.type] ?? item.type}
           </span>
         </td>
         <td style={{ padding: '0.4em 0.6em', fontWeight: 500 }}>{item.title}</td>

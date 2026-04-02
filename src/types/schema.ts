@@ -62,7 +62,7 @@ export const IssueSchema = z.object({
 
 export const KeyItemSchema = z.object({
   id: z.string(),
-  type: z.enum(['milestone', 'risk', 'decision', 'dependency']),
+  type: z.string(),
   title: z.string(),
   assignee: z.string().default(''),
   stakeholders: z.string().default(''),

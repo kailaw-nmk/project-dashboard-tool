@@ -22,7 +22,7 @@ export const IssueFormSchema = z.object({
 })
 
 export const KeyItemFormSchema = z.object({
-  type: z.enum(['milestone', 'risk', 'decision', 'dependency']),
+  type: z.string().min(1, 'タイプは必須です'),
   title: z.string().min(1, 'タイトルは必須です'),
   assignee: z.string(),
   stakeholders: z.string(),

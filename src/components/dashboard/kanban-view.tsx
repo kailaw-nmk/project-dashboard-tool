@@ -39,7 +39,7 @@ import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { WeeklyUpdateDialog } from '@/components/dashboard/weekly-update-dialog'
 import { ItemLinkDialog, type LinkSourceTarget } from '@/components/dashboard/item-link-dialog'
 import { KanbanTableView } from '@/components/dashboard/kanban-table-view'
-import type { System, Issue, KeyItem, WeeklyUpdate } from '@/types/schema'
+import type { System, Issue, KeyItem, KeyItemType, WeeklyUpdate } from '@/types/schema'
 
 type UpdateTarget = {
   itemId: string
@@ -48,14 +48,18 @@ type UpdateTarget = {
   weeklyUpdates: WeeklyUpdate[]
 } | null
 
-type ItemCategory = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+type ItemCategory = string
 
-const categoryLabels: Record<ItemCategory, string> = {
-  issue: 'Issue',
-  milestone: 'マイルストーン',
-  risk: 'リスク',
-  decision: '決定事項',
-  dependency: '依存関係',
+function buildCategoryLabels(keyItemTypes: KeyItemType[]): Record<string, string> {
+  const labels: Record<string, string> = { issue: 'Issue' }
+  for (const t of keyItemTypes) {
+    labels[t.id] = t.label
+  }
+  return labels
+}
+
+function buildAllCategories(keyItemTypes: KeyItemType[]): string[] {
+  return ['issue', ...keyItemTypes.map((t) => t.id)]
 }
 
 type KanbanItem =
@@ -119,14 +123,15 @@ const statusSectionLabels: Record<string, string> = {
   closed: '完了',
 }
 
-type AddItemType = 'issue' | 'milestone' | 'risk' | 'decision' | 'dependency'
+type AddItemType = string
 
-function SortableSystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, linkMode, linkSourceId, onLinkClick }: {
+function SortableSystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, keyItemTypes, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
   priorityFilter: Set<Priority>
+  keyItemTypes: KeyItemType[]
   linkMode?: boolean
   linkSourceId?: string | null
   onLinkClick?: (info: LinkSourceTarget) => void
@@ -146,6 +151,7 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters, pr
         onClick={onClick}
         activeFilters={activeFilters}
         priorityFilter={priorityFilter}
+        keyItemTypes={keyItemTypes}
         dragListeners={listeners}
         linkMode={linkMode}
         linkSourceId={linkSourceId}
@@ -155,12 +161,13 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters, pr
   )
 }
 
-function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, dragListeners, linkMode, linkSourceId, onLinkClick }: {
+function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, keyItemTypes, dragListeners, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
   priorityFilter: Set<Priority>
+  keyItemTypes: KeyItemType[]
   dragListeners?: Record<string, Function>
   linkMode?: boolean
   linkSourceId?: string | null
@@ -169,7 +176,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
   const [closedOpen, setClosedOpen] = useState(false)
   const [issueFormOpen, setIssueFormOpen] = useState(false)
   const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
-  const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
+  const [keyItemDefaultType, setKeyItemDefaultType] = useState(keyItemTypes[0]?.id ?? 'milestone')
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
@@ -262,18 +269,11 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
             <DropdownMenuItem onClick={() => handleAddItem('issue')}>
               Issue
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('milestone')}>
-              マイルストーン
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('risk')}>
-              リスク
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('decision')}>
-              決定事項
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('dependency')}>
-              依存関係
-            </DropdownMenuItem>
+            {keyItemTypes.map((t) => (
+              <DropdownMenuItem key={t.id} onClick={() => handleAddItem(t.id)}>
+                {t.label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -364,19 +364,20 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
   )
 }
 
-const allCategories: ItemCategory[] = ['issue', 'milestone', 'risk', 'decision', 'dependency']
+// allCategories is now built dynamically from settings in KanbanView
 
 /** 個別システムビュー: ステータス別3カラム */
-function SingleSystemKanban({ system, activeFilters, priorityFilter }: {
+function SingleSystemKanban({ system, activeFilters, priorityFilter, keyItemTypes }: {
   system: System
   activeFilters: Set<ItemCategory>
   priorityFilter: Set<Priority>
+  keyItemTypes: KeyItemType[]
 }) {
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
   const [issueFormOpen, setIssueFormOpen] = useState(false)
   const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
-  const [keyItemDefaultType, setKeyItemDefaultType] = useState<'milestone' | 'risk' | 'decision' | 'dependency'>('milestone')
+  const [keyItemDefaultType, setKeyItemDefaultType] = useState(keyItemTypes[0]?.id ?? 'milestone')
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
 
   const groups = groupByStatus(system, activeFilters, priorityFilter)
@@ -423,10 +424,9 @@ function SingleSystemKanban({ system, activeFilters, priorityFilter }: {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleAddItem('issue')}>Issue</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('milestone')}>マイルストーン</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('risk')}>リスク</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('decision')}>決定事項</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddItem('dependency')}>依存関係</DropdownMenuItem>
+            {keyItemTypes.map((t) => (
+              <DropdownMenuItem key={t.id} onClick={() => handleAddItem(t.id)}>{t.label}</DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -491,6 +491,9 @@ export function KanbanView() {
   )
   const setSelectedSystemId = useProjectStore((s) => s.setSelectedSystemId)
   const reorderSystems = useProjectStore((s) => s.reorderSystems)
+  const keyItemTypes = settings?.keyItemTypes ?? []
+  const allCategories = buildAllCategories(keyItemTypes)
+  const categoryLabels = buildCategoryLabels(keyItemTypes)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
   const [priorityFilter, setPriorityFilter] = useState<Set<Priority>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
@@ -743,6 +746,7 @@ export function KanbanView() {
             system={selectedSystem}
             activeFilters={activeFilters}
             priorityFilter={priorityFilter}
+            keyItemTypes={keyItemTypes}
           />
         ) : (
           /* All systems: horizontal columns with drag reorder */
@@ -761,6 +765,7 @@ export function KanbanView() {
                       onLinkClick={handleLinkClick}
                       activeFilters={activeFilters}
                       priorityFilter={priorityFilter}
+                      keyItemTypes={keyItemTypes}
                     />
                   ))}
                 </div>

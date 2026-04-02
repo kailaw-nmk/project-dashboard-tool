@@ -33,15 +33,8 @@ interface KeyItemFormDialogProps {
   onOpenChange: (open: boolean) => void
   systemId: string
   editData?: KeyItem | null
-  defaultType?: 'milestone' | 'risk' | 'decision' | 'dependency'
+  defaultType?: string
 }
-
-const typeOptions = [
-  { value: 'milestone', label: 'マイルストーン' },
-  { value: 'risk', label: 'リスク' },
-  { value: 'decision', label: '決定事項' },
-  { value: 'dependency', label: '依存関係' },
-] as const
 
 const statusOptions = [
   { value: 'open', label: '未対応' },
@@ -56,8 +49,8 @@ export function KeyItemFormDialog({
   editData,
   defaultType = 'milestone',
 }: KeyItemFormDialogProps) {
-  const { addKeyItem, updateKeyItem, deleteKeyItem } = useProjectStore(
-    useShallow((s) => ({ addKeyItem: s.addKeyItem, updateKeyItem: s.updateKeyItem, deleteKeyItem: s.deleteKeyItem })),
+  const { addKeyItem, updateKeyItem, deleteKeyItem, keyItemTypes } = useProjectStore(
+    useShallow((s) => ({ addKeyItem: s.addKeyItem, updateKeyItem: s.updateKeyItem, deleteKeyItem: s.deleteKeyItem, keyItemTypes: s.projectData?.settings.keyItemTypes ?? [] })),
   )
 
   const isEdit = !!editData
@@ -138,8 +131,8 @@ export function KeyItemFormDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {typeOptions.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>
+                        {keyItemTypes.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
                             {o.label}
                           </SelectItem>
                         ))}
