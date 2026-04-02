@@ -84,7 +84,17 @@ function getItemPriority(item: KanbanItem): Priority | null {
   return null
 }
 
-function groupByStatus(system: System, activeFilters: Set<ItemCategory>, priorityFilter: Set<Priority>) {
+type StatusFilter = 'open' | 'in-progress' | 'closed'
+
+const statusFilterLabels: Record<StatusFilter, string> = {
+  open: '未対応',
+  'in-progress': '対応中',
+  closed: '完了',
+}
+
+const allStatuses: StatusFilter[] = ['open', 'in-progress', 'closed']
+
+function groupByStatus(system: System, activeFilters: Set<ItemCategory>, priorityFilter: Set<Priority>, statusFilter?: Set<StatusFilter>) {
   const allItems: KanbanItem[] = [
     ...system.issues.map((i) => ({ kind: 'issue' as const, data: i })),
     ...system.keyItems.map((k) => ({ kind: 'keyItem' as const, data: k })),
@@ -99,6 +109,10 @@ function groupByStatus(system: System, activeFilters: Set<ItemCategory>, priorit
       const p = getItemPriority(item)
       return p === null || priorityFilter.has(p) // KeyItemは優先度なしなので常に表示
     })
+  }
+
+  if (statusFilter && statusFilter.size > 0) {
+    items = items.filter((item) => statusFilter.has(item.data.status as StatusFilter))
   }
 
   const groups: Record<string, KanbanItem[]> = {
@@ -125,12 +139,13 @@ const statusSectionLabels: Record<string, string> = {
 
 type AddItemType = string
 
-function SortableSystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, keyItemTypes, linkMode, linkSourceId, onLinkClick }: {
+function SortableSystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, statusFilter, keyItemTypes, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
   priorityFilter: Set<Priority>
+  statusFilter: Set<StatusFilter>
   keyItemTypes: KeyItemType[]
   linkMode?: boolean
   linkSourceId?: string | null
@@ -151,6 +166,7 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters, pr
         onClick={onClick}
         activeFilters={activeFilters}
         priorityFilter={priorityFilter}
+        statusFilter={statusFilter}
         keyItemTypes={keyItemTypes}
         dragListeners={listeners}
         linkMode={linkMode}
@@ -161,12 +177,13 @@ function SortableSystemColumn({ system, statusOption, onClick, activeFilters, pr
   )
 }
 
-function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, keyItemTypes, dragListeners, linkMode, linkSourceId, onLinkClick }: {
+function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFilter, statusFilter, keyItemTypes, dragListeners, linkMode, linkSourceId, onLinkClick }: {
   system: System
   statusOption: { label: string; color: string } | undefined
   onClick: () => void
   activeFilters: Set<ItemCategory>
   priorityFilter: Set<Priority>
+  statusFilter: Set<StatusFilter>
   keyItemTypes: KeyItemType[]
   dragListeners?: Record<string, Function>
   linkMode?: boolean
@@ -180,7 +197,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
-  const groups = groupByStatus(system, activeFilters, priorityFilter)
+  const groups = groupByStatus(system, activeFilters, priorityFilter, statusFilter)
   const hasItems = groups.open.length > 0 || groups['in-progress'].length > 0 || groups.closed.length > 0
 
   const handleAddItem = (type: AddItemType) => {
@@ -367,10 +384,11 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
 // allCategories is now built dynamically from settings in KanbanView
 
 /** 個別システムビュー: ステータス別3カラム */
-function SingleSystemKanban({ system, activeFilters, priorityFilter, keyItemTypes }: {
+function SingleSystemKanban({ system, activeFilters, priorityFilter, statusFilter, keyItemTypes }: {
   system: System
   activeFilters: Set<ItemCategory>
   priorityFilter: Set<Priority>
+  statusFilter: Set<StatusFilter>
   keyItemTypes: KeyItemType[]
 }) {
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
@@ -380,7 +398,7 @@ function SingleSystemKanban({ system, activeFilters, priorityFilter, keyItemType
   const [keyItemDefaultType, setKeyItemDefaultType] = useState(keyItemTypes[0]?.id ?? 'milestone')
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
 
-  const groups = groupByStatus(system, activeFilters, priorityFilter)
+  const groups = groupByStatus(system, activeFilters, priorityFilter, statusFilter)
 
   const handleAddItem = (type: AddItemType) => {
     if (type === 'issue') {
@@ -496,6 +514,7 @@ export function KanbanView() {
   const categoryLabels = buildCategoryLabels(keyItemTypes)
   const [activeFilters, setActiveFilters] = useState<Set<ItemCategory>>(new Set())
   const [priorityFilter, setPriorityFilter] = useState<Set<Priority>>(new Set())
+  const [statusFilter, setStatusFilter] = useState<Set<StatusFilter>>(new Set())
   const [selectedSystemForKanban, setSelectedSystemForKanban] = useState<string | null>(null)
   const [viewStyle, setViewStyle] = useState<'card' | 'table'>('card')
   const [fontSize, setFontSize] = useState(100)
@@ -566,6 +585,14 @@ export function KanbanView() {
     setPriorityFilter((prev) => {
       const next = new Set(prev)
       if (next.has(p)) { next.delete(p) } else { next.add(p) }
+      return next
+    })
+  }
+
+  const toggleStatus = (s: StatusFilter) => {
+    setStatusFilter((prev) => {
+      const next = new Set(prev)
+      if (next.has(s)) { next.delete(s) } else { next.add(s) }
       return next
     })
   }
@@ -713,6 +740,33 @@ export function KanbanView() {
         {/* Separator */}
         <div className="h-5 w-px bg-border" />
 
+        {/* Status filter */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">状態:</span>
+          {allStatuses.map((s) => {
+            const isActive = statusFilter.has(s)
+            return (
+              <Button
+                key={s}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => toggleStatus(s)}
+              >
+                {statusFilterLabels[s]}
+              </Button>
+            )
+          })}
+          {statusFilter.size > 0 && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setStatusFilter(new Set())}>
+              クリア
+            </Button>
+          )}
+        </div>
+
+        {/* Separator */}
+        <div className="h-5 w-px bg-border" />
+
         {/* Font size controls */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => changeFontSize(-10)} title="文字を小さく">
@@ -738,6 +792,7 @@ export function KanbanView() {
             systems={systems}
             activeFilters={activeFilters}
             selectedSystemId={selectedSystemForKanban}
+            statusFilter={statusFilter}
           />
         ) : selectedSystem ? (
           /* Single system kanban: 3-column status board */
@@ -746,6 +801,7 @@ export function KanbanView() {
             system={selectedSystem}
             activeFilters={activeFilters}
             priorityFilter={priorityFilter}
+            statusFilter={statusFilter}
             keyItemTypes={keyItemTypes}
           />
         ) : (
@@ -765,6 +821,7 @@ export function KanbanView() {
                       onLinkClick={handleLinkClick}
                       activeFilters={activeFilters}
                       priorityFilter={priorityFilter}
+                      statusFilter={statusFilter}
                       keyItemTypes={keyItemTypes}
                     />
                   ))}

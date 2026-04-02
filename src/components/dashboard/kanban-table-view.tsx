@@ -66,7 +66,7 @@ type FlatItem = {
   dueDate: string
 }
 
-function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selectedSystemId: string | null): FlatItem[] {
+function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selectedSystemId: string | null, statusFilter?: Set<string>): FlatItem[] {
   const targetSystems = selectedSystemId ? systems.filter((s) => s.id === selectedSystemId) : systems
   const items: FlatItem[] = []
 
@@ -107,6 +107,9 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
       })
     }
   }
+  if (statusFilter && statusFilter.size > 0) {
+    return items.filter((item) => statusFilter.has(item.status))
+  }
   return items
 }
 
@@ -114,9 +117,10 @@ interface KanbanTableViewProps {
   systems: System[]
   activeFilters: Set<ItemCategory>
   selectedSystemId: string | null
+  statusFilter?: Set<string>
 }
 
-export function KanbanTableView({ systems, activeFilters, selectedSystemId }: KanbanTableViewProps) {
+export function KanbanTableView({ systems, activeFilters, selectedSystemId, statusFilter }: KanbanTableViewProps) {
   const keyItemTypes = useProjectStore((s) => s.projectData?.settings.keyItemTypes ?? [])
   const dynamicTypeLabels: Record<string, string> = { issue: 'Issue' }
   for (const t of keyItemTypes) dynamicTypeLabels[t.id] = t.label
@@ -124,7 +128,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId }: Ka
   const [editingIssue, setEditingIssue] = useState<{ systemId: string; issue: Issue } | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<{ systemId: string; keyItem: KeyItem } | null>(null)
 
-  const items = flattenItems(systems, activeFilters, selectedSystemId)
+  const items = flattenItems(systems, activeFilters, selectedSystemId, statusFilter)
 
   // Group by system for section headers (only in all-systems mode)
   const showSystemHeaders = !selectedSystemId
