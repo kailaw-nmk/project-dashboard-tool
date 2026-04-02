@@ -283,7 +283,7 @@ export function SettingsView() {
         <CardContent>
           <div className="flex flex-col gap-2">
             {keyItemTypes.map((opt, i) => (
-              <div key={opt.id} className="flex items-center gap-2">
+              <div key={i} className="flex items-center gap-2">
                 <Input
                   value={opt.id}
                   onChange={(e) => updateKeyItemType(i, { id: e.target.value })}
