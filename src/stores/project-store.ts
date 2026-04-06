@@ -77,13 +77,43 @@ function updateSystemInList(
   return systems.map((s) => (s.id === systemId ? updater(s) : s))
 }
 
+const STORAGE_KEY = 'project-dashboard-data'
+const AUTO_SAVE_DELAY_MS = 2000
+
+function loadFromStorage(): ProjectData | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as ProjectData
+  } catch {
+    return null
+  }
+}
+
+function saveToStorage(data: ProjectData | null): void {
+  if (typeof window === 'undefined') return
+  try {
+    if (data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    } else {
+      localStorage.removeItem(STORAGE_KEY)
+    }
+  } catch {
+    // quota exceeded etc. — silently ignore
+  }
+}
+
 export const useProjectStore = create<ProjectState>()((set, get) => ({
   projectData: null,
   selectedSystemId: null,
   activeView: 'dashboard',
 
   setProjectData: (data) => set({ projectData: { ...data, currentWeek: getCurrentWeek() } }),
-  clearProjectData: () => set({ projectData: null, selectedSystemId: null }),
+  clearProjectData: () => {
+    localStorage.removeItem(STORAGE_KEY)
+    set({ projectData: null, selectedSystemId: null })
+  },
 
   // System CRUD
   addSystem: (system) =>
@@ -327,3 +357,23 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
   setSelectedSystemId: (id) => set({ selectedSystemId: id }),
   setActiveView: (view) => set({ activeView: view }),
 }))
+
+// --- Auto-save to localStorage with debounce ---
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+useProjectStore.subscribe((state, prevState) => {
+  if (state.projectData !== prevState.projectData) {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer)
+    autoSaveTimer = setTimeout(() => {
+      saveToStorage(state.projectData)
+    }, AUTO_SAVE_DELAY_MS)
+  }
+})
+
+// --- Hydrate from localStorage on load ---
+if (typeof window !== 'undefined') {
+  const saved = loadFromStorage()
+  if (saved) {
+    useProjectStore.getState().setProjectData(saved)
+  }
+}
