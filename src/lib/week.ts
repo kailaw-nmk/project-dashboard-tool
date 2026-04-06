@@ -44,6 +44,15 @@ export function getCurrentWeek(): string {
   return formatWeekDate(getFridayOfWeek())
 }
 
+/**
+ * 前週の金曜日の日付を "YYYY/MM/DD" 形式で返す
+ */
+export function getPreviousWeek(): string {
+  const friday = getFridayOfWeek()
+  friday.setDate(friday.getDate() - 7)
+  return formatWeekDate(friday)
+}
+
 import type { WeeklyUpdate } from '@/types/schema'
 
 /**

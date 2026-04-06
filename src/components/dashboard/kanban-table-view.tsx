@@ -5,7 +5,7 @@ import { Flame } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
-import { getCurrentWeek } from '@/lib/week'
+import { getCurrentWeek, getPreviousWeek } from '@/lib/week'
 import type { System, Issue, KeyItem } from '@/types/schema'
 
 type ItemCategory = string
@@ -66,17 +66,19 @@ type FlatItem = {
   stakeholders: string
   dueDate: string
   weeklyComment: string
+  lastWeekComment: string
 }
 
-function getWeeklyComment(updates: { week: string; content: string }[] | undefined): string {
+function getWeeklyComment(updates: { week: string; content: string }[] | undefined, week: string): string {
   if (!updates) return ''
-  const current = getCurrentWeek()
-  return updates.find((u) => u.week === current)?.content ?? ''
+  return updates.find((u) => u.week === week)?.content ?? ''
 }
 
 function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selectedSystemId: string | null, statusFilter?: Set<string>): FlatItem[] {
   const targetSystems = selectedSystemId ? systems.filter((s) => s.id === selectedSystemId) : systems
   const items: FlatItem[] = []
+  const currentWeek = getCurrentWeek()
+  const previousWeek = getPreviousWeek()
 
   for (const sys of targetSystems) {
     if (activeFilters.size === 0 || activeFilters.has('issue')) {
@@ -85,7 +87,8 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
           systemId: sys.id, systemName: sys.name, kind: 'issue', type: 'issue', issue,
           id: issue.id, title: issue.title, status: issue.status, priority: issue.priority,
           assignee: issue.assignee, stakeholders: issue.stakeholders ?? '', dueDate: issue.dueDate,
-          weeklyComment: getWeeklyComment(issue.weeklyUpdates),
+          weeklyComment: getWeeklyComment(issue.weeklyUpdates, currentWeek),
+          lastWeekComment: getWeeklyComment(issue.weeklyUpdates, previousWeek),
         })
       }
     }
@@ -96,7 +99,8 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
         systemId: sys.id, systemName: sys.name, kind: 'keyItem', type: ki.type, keyItem: ki,
         id: ki.id, title: ki.title, status: ki.status,
         assignee: ki.assignee ?? '', stakeholders: ki.stakeholders ?? '', dueDate: ki.dueDate ?? '',
-        weeklyComment: getWeeklyComment(ki.weeklyUpdates),
+        weeklyComment: getWeeklyComment(ki.weeklyUpdates, currentWeek),
+        lastWeekComment: getWeeklyComment(ki.weeklyUpdates, previousWeek),
       })
     }
   }
@@ -114,6 +118,7 @@ const columns = [
   { key: 'priority', label: '優先度', defaultWidth: 60 },
   { key: 'assignee', label: '担当', defaultWidth: 120 },
   { key: 'dueDate', label: '期限', defaultWidth: 100 },
+  { key: 'lastWeekComment', label: '先週のコメント', defaultWidth: 200 },
   { key: 'comment', label: '今週のコメント', defaultWidth: 200 },
 ]
 
@@ -215,8 +220,14 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
           )}
         </td>
         <td
-          className="text-foreground"
+          className="text-muted-foreground"
           style={{ ...cellStyle(6), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
+        >
+          {item.lastWeekComment}
+        </td>
+        <td
+          className="text-foreground"
+          style={{ ...cellStyle(7), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
         >
           {item.weeklyComment}
         </td>
