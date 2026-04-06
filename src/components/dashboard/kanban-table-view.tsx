@@ -118,8 +118,8 @@ const columns = [
   { key: 'priority', label: '優先度', defaultWidth: 60 },
   { key: 'assignee', label: '担当', defaultWidth: 120 },
   { key: 'dueDate', label: '期限', defaultWidth: 100 },
-  { key: 'lastWeekComment', label: '先週のコメント', defaultWidth: 200 },
   { key: 'comment', label: '今週のコメント', defaultWidth: 200 },
+  { key: 'lastWeekComment', label: '先週のコメント', defaultWidth: 200 },
 ]
 
 interface KanbanTableViewProps {
@@ -220,16 +220,16 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
           )}
         </td>
         <td
-          className="text-muted-foreground"
+          className="text-foreground"
           style={{ ...cellStyle(6), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
         >
-          {item.lastWeekComment}
+          {item.weeklyComment}
         </td>
         <td
-          className="text-foreground"
+          className="text-muted-foreground"
           style={{ ...cellStyle(7), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
         >
-          {item.weeklyComment}
+          {item.lastWeekComment}
         </td>
       </tr>
     )
