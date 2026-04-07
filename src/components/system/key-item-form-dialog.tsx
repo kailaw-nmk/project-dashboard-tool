@@ -116,15 +116,15 @@ export function KeyItemFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col min-h-0 flex-1 gap-4">
           <DialogHeader>
             <DialogTitle>{isEdit ? 'キーアイテム編集' : 'キーアイテム追加'}</DialogTitle>
             <DialogDescription>
               {isEdit ? 'キーアイテムの情報を編集します。' : '新しいキーアイテムを追加します。'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-3 py-2 overflow-y-auto flex-1 min-h-0 pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-sm font-medium">タイプ</label>

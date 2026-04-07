@@ -115,15 +115,15 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit(onSubmit)}>
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col min-h-0 flex-1 gap-4">
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Issue 編集' : 'Issue 追加'}</DialogTitle>
             <DialogDescription>
               {isEdit ? 'Issueの情報を編集します。' : '新しいIssueを追加します。'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-3 py-2 overflow-y-auto flex-1 min-h-0 pr-1">
             <div>
               <label className="mb-1 block text-sm font-medium">タイトル *</label>
               <Input {...register('title')} />
