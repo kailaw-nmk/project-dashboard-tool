@@ -42,6 +42,28 @@ export const WeeklyUpdateSchema = z.object({
   updatedAt: z.string(),
 })
 
+// --- Action ---
+
+export const ActionStatusSchema = z.enum(['pending', 'in-progress', 'completed', 'on-hold'])
+
+export const ActionHistoryEntrySchema = z.object({
+  status: ActionStatusSchema,
+  changedAt: z.string(),
+  note: z.string().default(''),
+})
+
+export const ActionSchema = z.object({
+  id: z.string(),
+  owner: z.string().default(''),
+  description: z.string().default(''),
+  status: ActionStatusSchema,
+  dueDate: z.string().default(''),
+  externalLink: z.string().default(''),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  history: z.array(ActionHistoryEntrySchema).default([]),
+})
+
 // --- Issue ---
 
 export const IssueSchema = z.object({
@@ -56,6 +78,7 @@ export const IssueSchema = z.object({
   description: z.string(),
   externalLink: z.string().default(''),
   weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
+  actions: z.array(ActionSchema).default([]),
 })
 
 // --- KeyItem ---
@@ -72,6 +95,7 @@ export const KeyItemSchema = z.object({
   status: z.enum(['open', 'in-progress', 'closed']),
   externalLink: z.string().default(''),
   weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
+  actions: z.array(ActionSchema).default([]),
 })
 
 // --- System ---
@@ -152,6 +176,9 @@ export const ProjectDataSchema = z.object({
 // --- Inferred types ---
 
 export type WeeklyUpdate = z.infer<typeof WeeklyUpdateSchema>
+export type ActionStatus = z.infer<typeof ActionStatusSchema>
+export type ActionHistoryEntry = z.infer<typeof ActionHistoryEntrySchema>
+export type Action = z.infer<typeof ActionSchema>
 export type StatusOption = z.infer<typeof StatusOptionSchema>
 export type PhaseOption = z.infer<typeof PhaseOptionSchema>
 export type KeyItemType = z.infer<typeof KeyItemTypeSchema>

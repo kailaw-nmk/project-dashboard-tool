@@ -9,6 +9,7 @@ import type {
   Dependency,
   ItemDependency,
   WeeklySnapshot,
+  Action,
 } from '@/types/schema'
 import { getCurrentWeek } from '@/lib/week'
 
@@ -48,6 +49,20 @@ interface ProjectState {
   // Item Dependency
   addItemDependency: (dep: ItemDependency) => void
   deleteItemDependency: (id: string) => void
+
+  // Action CRUD (on Issue or KeyItem)
+  upsertAction: (
+    systemId: string,
+    itemId: string,
+    itemKind: 'issue' | 'keyItem',
+    action: Action,
+  ) => void
+  deleteAction: (
+    systemId: string,
+    itemId: string,
+    itemKind: 'issue' | 'keyItem',
+    actionId: string,
+  ) => void
 
   // Snapshot
   saveSnapshot: (snapshot: WeeklySnapshot) => void
@@ -250,6 +265,92 @@ export const useProjectStore = create<ProjectState>()((set, get) => ({
           itemDependencies: (state.projectData.itemDependencies ?? []).filter(
             (d) => d.sourceItemId !== keyItemId && d.targetItemId !== keyItemId,
           ),
+        }),
+      }
+    }),
+
+  // Action CRUD
+  upsertAction: (systemId, itemId, itemKind, action) =>
+    set((state) => {
+      if (!state.projectData) return state
+      const applyToActions = (existing: Action[] | undefined): Action[] => {
+        const list = existing ?? []
+        const idx = list.findIndex((a) => a.id === action.id)
+        const nowStr = now()
+        if (idx >= 0) {
+          const prev = list[idx]
+          const statusChanged = prev.status !== action.status
+          const merged: Action = {
+            ...prev,
+            ...action,
+            updatedAt: nowStr,
+            history: statusChanged
+              ? [
+                  ...(prev.history ?? []),
+                  { status: action.status, changedAt: nowStr, note: '' },
+                ]
+              : (prev.history ?? []),
+          }
+          return list.map((a, i) => (i === idx ? merged : a))
+        }
+        const newAction: Action = {
+          ...action,
+          createdAt: action.createdAt || nowStr,
+          updatedAt: nowStr,
+          history: [
+            ...(action.history ?? []),
+            { status: action.status, changedAt: nowStr, note: '' },
+          ],
+        }
+        return [...list, newAction]
+      }
+      return {
+        projectData: updateProjectTimestamp({
+          ...state.projectData,
+          systems: updateSystemInList(state.projectData.systems, systemId, (s) => ({
+            ...s,
+            issues:
+              itemKind === 'issue'
+                ? s.issues.map((i) =>
+                    i.id === itemId ? { ...i, actions: applyToActions(i.actions) } : i,
+                  )
+                : s.issues,
+            keyItems:
+              itemKind === 'keyItem'
+                ? s.keyItems.map((k) =>
+                    k.id === itemId ? { ...k, actions: applyToActions(k.actions) } : k,
+                  )
+                : s.keyItems,
+            updatedAt: now(),
+          })),
+        }),
+      }
+    }),
+
+  deleteAction: (systemId, itemId, itemKind, actionId) =>
+    set((state) => {
+      if (!state.projectData) return state
+      const removeAction = (existing: Action[] | undefined): Action[] =>
+        (existing ?? []).filter((a) => a.id !== actionId)
+      return {
+        projectData: updateProjectTimestamp({
+          ...state.projectData,
+          systems: updateSystemInList(state.projectData.systems, systemId, (s) => ({
+            ...s,
+            issues:
+              itemKind === 'issue'
+                ? s.issues.map((i) =>
+                    i.id === itemId ? { ...i, actions: removeAction(i.actions) } : i,
+                  )
+                : s.issues,
+            keyItems:
+              itemKind === 'keyItem'
+                ? s.keyItems.map((k) =>
+                    k.id === itemId ? { ...k, actions: removeAction(k.actions) } : k,
+                  )
+                : s.keyItems,
+            updatedAt: now(),
+          })),
         }),
       }
     }),

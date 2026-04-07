@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, Flame, StickyNote } from 'lucide-react'
+import { CheckSquare, ExternalLink, Flame, StickyNote } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { getCurrentWeek } from '@/lib/week'
 import type { Issue, KeyItem, KeyItemType } from '@/types/schema'
@@ -77,6 +77,43 @@ function UpdateIcon({ hasUpdate, onClick }: { hasUpdate: boolean; onClick: (e: R
   )
 }
 
+function ActionIcon({
+  total,
+  incomplete,
+  onClick,
+}: {
+  total: number
+  incomplete: number
+  onClick: (e: React.MouseEvent) => void
+}) {
+  if (total === 0) {
+    return (
+      <button
+        style={{ padding: 2, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2 }}
+        className="hover:bg-accent text-muted-foreground/40 hover:text-muted-foreground"
+        onClick={onClick}
+        title="アクション (0件)"
+      >
+        <CheckSquare style={{ width: '1.1em', height: '1.1em' }} />
+      </button>
+    )
+  }
+  const allDone = incomplete === 0
+  return (
+    <button
+      style={{ padding: 2, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2 }}
+      className={`hover:bg-accent ${allDone ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}
+      onClick={onClick}
+      title={`アクション ${incomplete}/${total} 未完了`}
+    >
+      <CheckSquare style={{ width: '1.1em', height: '1.1em' }} />
+      <span style={{ fontSize: '0.7em', fontWeight: 600 }}>
+        {incomplete}/{total}
+      </span>
+    </button>
+  )
+}
+
 function LinkIcon({ href }: { href: string }) {
   return (
     <a
@@ -97,17 +134,20 @@ interface IssueCardProps {
   issue: Issue
   onClick: () => void
   onUpdateClick?: () => void
+  onActionClick?: () => void
   linkMode?: boolean
   linkSelected?: boolean
   onLinkClick?: () => void
 }
 
-export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: IssueCardProps) {
+export function IssueCard({ issue, onClick, onUpdateClick, onActionClick, linkMode, linkSelected, onLinkClick }: IssueCardProps) {
   const statusInfo = statusLabels[issue.status]
   const priorityInfo = priorityConfig[issue.priority]
   const cardBg = priorityCardStyle[issue.priority] ?? {}
   const hasUpdate = (issue.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
   const overdue = isOverdue(issue.dueDate, issue.status)
+  const totalActions = (issue.actions ?? []).length
+  const incompleteActions = (issue.actions ?? []).filter((a) => a.status !== 'completed').length
 
   const ringClass = linkSelected
     ? 'ring-2 ring-emerald-500'
@@ -131,6 +171,13 @@ export function IssueCard({ issue, onClick, onUpdateClick, linkMode, linkSelecte
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.15em' }}>
           {!linkMode && issue.externalLink && <LinkIcon href={issue.externalLink} />}
+          {!linkMode && onActionClick && (
+            <ActionIcon
+              total={totalActions}
+              incomplete={incompleteActions}
+              onClick={(e) => { e.stopPropagation(); onActionClick() }}
+            />
+          )}
           {!linkMode && onUpdateClick && (
             <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
           )}
@@ -170,12 +217,13 @@ interface KeyItemCardProps {
   keyItem: KeyItem
   onClick: () => void
   onUpdateClick?: () => void
+  onActionClick?: () => void
   linkMode?: boolean
   linkSelected?: boolean
   onLinkClick?: () => void
 }
 
-export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSelected, onLinkClick }: KeyItemCardProps) {
+export function KeyItemCard({ keyItem, onClick, onUpdateClick, onActionClick, linkMode, linkSelected, onLinkClick }: KeyItemCardProps) {
   const keyItemTypes = useProjectStore((s) => s.projectData?.settings.keyItemTypes)
   const statusInfo = statusLabels[keyItem.status]
   const customType = keyItemTypes?.find((t) => t.id === keyItem.type)
@@ -183,6 +231,8 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
   const typeColor = keyItemTypeColors[keyItem.type] ?? '#6b7280'
   const hasUpdate = (keyItem.weeklyUpdates ?? []).some((u) => u.week === getCurrentWeek())
   const overdue = isOverdue(keyItem.dueDate, keyItem.status)
+  const totalActions = (keyItem.actions ?? []).length
+  const incompleteActions = (keyItem.actions ?? []).filter((a) => a.status !== 'completed').length
 
   const ringClass = linkSelected
     ? 'ring-2 ring-emerald-500'
@@ -203,6 +253,13 @@ export function KeyItemCard({ keyItem, onClick, onUpdateClick, linkMode, linkSel
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.15em' }}>
           {!linkMode && keyItem.externalLink && <LinkIcon href={keyItem.externalLink} />}
+          {!linkMode && onActionClick && (
+            <ActionIcon
+              total={totalActions}
+              incomplete={incompleteActions}
+              onClick={(e) => { e.stopPropagation(); onActionClick() }}
+            />
+          )}
           {!linkMode && onUpdateClick && (
             <UpdateIcon hasUpdate={hasUpdate} onClick={(e) => { e.stopPropagation(); onUpdateClick() }} />
           )}

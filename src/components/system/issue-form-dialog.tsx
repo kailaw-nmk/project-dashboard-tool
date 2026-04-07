@@ -24,6 +24,7 @@ import {
 import { useProjectStore } from '@/stores/project-store'
 import { ItemDependenciesSection } from './item-dependencies-section'
 import { WeeklyUpdateSection, type WeeklyUpdateSectionHandle } from './weekly-update-section'
+import { ActionListSection, type ActionListSectionHandle } from './action-list-section'
 import { useShallow } from 'zustand/react/shallow'
 import { IssueFormSchema, type IssueFormData } from '@/types/form-schemas'
 import type { Issue } from '@/types/schema'
@@ -53,6 +54,7 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
   )
 
   const weeklyRef = useRef<WeeklyUpdateSectionHandle>(null)
+  const actionRef = useRef<ActionListSectionHandle>(null)
   const isEdit = !!editData
   const {
     register,
@@ -97,12 +99,14 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
   const onSubmit = (data: IssueFormData) => {
     if (isEdit) {
       weeklyRef.current?.save()
+      actionRef.current?.save()
       updateIssue(systemId, editData.id, data)
     } else {
       const issue: Issue = {
         id: crypto.randomUUID(),
         ...data,
         weeklyUpdates: [],
+        actions: [],
       }
       addIssue(systemId, issue)
     }
@@ -206,6 +210,15 @@ export function IssueFormDialog({ open, onOpenChange, systemId, editData }: Issu
                 itemId={editData.id}
                 itemKind="issue"
                 weeklyUpdates={editData.weeklyUpdates ?? []}
+              />
+            )}
+            {isEdit && (
+              <ActionListSection
+                ref={actionRef}
+                systemId={systemId}
+                itemId={editData.id}
+                itemKind="issue"
+                actions={editData.actions ?? []}
               />
             )}
             {isEdit && <ItemDependenciesSection itemId={editData.id} />}

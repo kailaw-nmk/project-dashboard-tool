@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useProjectStore } from '@/stores/project-store'
-import type { ProjectData, System, Issue, KeyItem, Dependency } from '@/types/schema'
+import type { ProjectData, System, Issue, KeyItem, Dependency, Action } from '@/types/schema'
 
 const makeSampleData = (): ProjectData => ({
   version: '1.0',
@@ -244,6 +244,100 @@ describe('ProjectStore', () => {
       const snaps = useProjectStore.getState().projectData!.weeklySnapshots
       expect(snaps).toHaveLength(1)
       expect(snaps[0].summary).toBe('2回目')
+    })
+  })
+
+  describe('Action CRUD', () => {
+    const baseAction = (overrides?: Partial<Action>): Action => ({
+      id: 'action-001',
+      owner: '田中',
+      description: '調査する',
+      status: 'pending',
+      dueDate: '',
+      externalLink: '',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      history: [],
+      ...overrides,
+    })
+
+    beforeEach(() => {
+      const data = makeSampleData()
+      data.systems = [makeSystem({ issues: [makeIssue()], keyItems: [makeKeyItem()] })]
+      useProjectStore.getState().setProjectData(data)
+    })
+
+    it('Issueに新規アクションを追加できる', () => {
+      const action = baseAction()
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', action)
+      const issue = useProjectStore.getState().projectData!.systems[0].issues[0]
+      expect(issue.actions).toHaveLength(1)
+      expect(issue.actions[0].owner).toBe('田中')
+      // 新規追加時に履歴が記録される
+      expect(issue.actions[0].history).toHaveLength(1)
+      expect(issue.actions[0].history[0].status).toBe('pending')
+    })
+
+    it('KeyItemに新規アクションを追加できる', () => {
+      const action = baseAction({ id: 'action-ki-001' })
+      useProjectStore.getState().upsertAction('sys-001', 'ki-001', 'keyItem', action)
+      const ki = useProjectStore.getState().projectData!.systems[0].keyItems[0]
+      expect(ki.actions).toHaveLength(1)
+      expect(ki.actions[0].id).toBe('action-ki-001')
+    })
+
+    it('既存アクションを更新できる(同じid)', () => {
+      const action = baseAction()
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', action)
+      const updated = { ...action, owner: '鈴木' }
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', updated)
+      const issue = useProjectStore.getState().projectData!.systems[0].issues[0]
+      expect(issue.actions).toHaveLength(1)
+      expect(issue.actions[0].owner).toBe('鈴木')
+    })
+
+    it('ステータス変更時に履歴が追記される', () => {
+      const action = baseAction()
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', action)
+      const after1 = useProjectStore.getState().projectData!.systems[0].issues[0].actions[0]
+      expect(after1.history).toHaveLength(1)
+
+      const inProgress = { ...after1, status: 'in-progress' as const }
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', inProgress)
+      const after2 = useProjectStore.getState().projectData!.systems[0].issues[0].actions[0]
+      expect(after2.history).toHaveLength(2)
+      expect(after2.history[1].status).toBe('in-progress')
+
+      const completed = { ...after2, status: 'completed' as const }
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', completed)
+      const after3 = useProjectStore.getState().projectData!.systems[0].issues[0].actions[0]
+      expect(after3.history).toHaveLength(3)
+      expect(after3.history[2].status).toBe('completed')
+    })
+
+    it('ステータスが変わらない更新では履歴が追加されない', () => {
+      const action = baseAction()
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', action)
+      const after = useProjectStore.getState().projectData!.systems[0].issues[0].actions[0]
+      const ownerOnly = { ...after, owner: '別の人' }
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', ownerOnly)
+      const final = useProjectStore.getState().projectData!.systems[0].issues[0].actions[0]
+      expect(final.history).toHaveLength(1)
+      expect(final.owner).toBe('別の人')
+    })
+
+    it('Issueからアクションを削除できる', () => {
+      useProjectStore.getState().upsertAction('sys-001', 'issue-001', 'issue', baseAction())
+      useProjectStore.getState().deleteAction('sys-001', 'issue-001', 'issue', 'action-001')
+      const issue = useProjectStore.getState().projectData!.systems[0].issues[0]
+      expect(issue.actions).toHaveLength(0)
+    })
+
+    it('KeyItemからアクションを削除できる', () => {
+      useProjectStore.getState().upsertAction('sys-001', 'ki-001', 'keyItem', baseAction({ id: 'a-1' }))
+      useProjectStore.getState().deleteAction('sys-001', 'ki-001', 'keyItem', 'a-1')
+      const ki = useProjectStore.getState().projectData!.systems[0].keyItems[0]
+      expect(ki.actions).toHaveLength(0)
     })
   })
 

@@ -24,6 +24,7 @@ import {
 import { useProjectStore } from '@/stores/project-store'
 import { ItemDependenciesSection } from './item-dependencies-section'
 import { WeeklyUpdateSection, type WeeklyUpdateSectionHandle } from './weekly-update-section'
+import { ActionListSection, type ActionListSectionHandle } from './action-list-section'
 import { useShallow } from 'zustand/react/shallow'
 import { KeyItemFormSchema, type KeyItemFormData } from '@/types/form-schemas'
 import type { KeyItem } from '@/types/schema'
@@ -54,6 +55,7 @@ export function KeyItemFormDialog({
   )
 
   const weeklyRef = useRef<WeeklyUpdateSectionHandle>(null)
+  const actionRef = useRef<ActionListSectionHandle>(null)
   const isEdit = !!editData
   const {
     register,
@@ -98,12 +100,14 @@ export function KeyItemFormDialog({
   const onSubmit = (data: KeyItemFormData) => {
     if (isEdit) {
       weeklyRef.current?.save()
+      actionRef.current?.save()
       updateKeyItem(systemId, editData.id, data)
     } else {
       const keyItem: KeyItem = {
         id: crypto.randomUUID(),
         ...data,
         weeklyUpdates: [],
+        actions: [],
       }
       addKeyItem(systemId, keyItem)
     }
@@ -207,6 +211,15 @@ export function KeyItemFormDialog({
                 itemId={editData.id}
                 itemKind="keyItem"
                 weeklyUpdates={editData.weeklyUpdates ?? []}
+              />
+            )}
+            {isEdit && (
+              <ActionListSection
+                ref={actionRef}
+                systemId={systemId}
+                itemId={editData.id}
+                itemKind="keyItem"
+                actions={editData.actions ?? []}
               />
             )}
             {isEdit && <ItemDependenciesSection itemId={editData.id} />}

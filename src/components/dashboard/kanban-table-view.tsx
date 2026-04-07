@@ -6,7 +6,7 @@ import { useProjectStore } from '@/stores/project-store'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { getCurrentWeek, getPreviousWeek } from '@/lib/week'
-import type { System, Issue, KeyItem } from '@/types/schema'
+import type { System, Issue, KeyItem, Action } from '@/types/schema'
 
 type ItemCategory = string
 
@@ -67,6 +67,7 @@ type FlatItem = {
   dueDate: string
   weeklyComment: string
   lastWeekComment: string
+  actions: Action[]
 }
 
 function getWeeklyComment(updates: { week: string; content: string }[] | undefined, week: string): string {
@@ -89,6 +90,7 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
           assignee: issue.assignee, stakeholders: issue.stakeholders ?? '', dueDate: issue.dueDate,
           weeklyComment: getWeeklyComment(issue.weeklyUpdates, currentWeek),
           lastWeekComment: getWeeklyComment(issue.weeklyUpdates, previousWeek),
+          actions: issue.actions ?? [],
         })
       }
     }
@@ -101,6 +103,7 @@ function flattenItems(systems: System[], activeFilters: Set<ItemCategory>, selec
         assignee: ki.assignee ?? '', stakeholders: ki.stakeholders ?? '', dueDate: ki.dueDate ?? '',
         weeklyComment: getWeeklyComment(ki.weeklyUpdates, currentWeek),
         lastWeekComment: getWeeklyComment(ki.weeklyUpdates, previousWeek),
+        actions: ki.actions ?? [],
       })
     }
   }
@@ -118,6 +121,7 @@ const columns = [
   { key: 'priority', label: '優先度', defaultWidth: 60 },
   { key: 'assignee', label: '担当', defaultWidth: 120 },
   { key: 'dueDate', label: '期限', defaultWidth: 100 },
+  { key: 'actions', label: 'アクション', defaultWidth: 200 },
   { key: 'comment', label: '今週のコメント', defaultWidth: 200 },
   { key: 'lastWeekComment', label: '先週のコメント', defaultWidth: 200 },
 ]
@@ -219,15 +223,34 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
             </span>
           )}
         </td>
+        <td style={{ ...cellStyle(6), fontSize: '0.8em' }}>
+          {item.actions.length > 0 && (() => {
+            const incomplete = item.actions.filter((a) => a.status !== 'completed').length
+            const owners = Array.from(new Set(item.actions.filter((a) => a.status !== 'completed').map((a) => a.owner).filter(Boolean)))
+            const allDone = incomplete === 0
+            return (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
+                <span style={{ fontWeight: 600, color: allDone ? '#16a34a' : '#d97706' }}>
+                  {incomplete}/{item.actions.length}
+                </span>
+                {owners.length > 0 && (
+                  <span style={{ opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {owners.join(', ')}
+                  </span>
+                )}
+              </span>
+            )
+          })()}
+        </td>
         <td
           className="text-foreground"
-          style={{ ...cellStyle(6), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
+          style={{ ...cellStyle(7), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
         >
           {item.weeklyComment}
         </td>
         <td
           className="text-muted-foreground"
-          style={{ ...cellStyle(7), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
+          style={{ ...cellStyle(8), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
         >
           {item.lastWeekComment}
         </td>

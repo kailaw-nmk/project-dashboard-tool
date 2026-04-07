@@ -37,15 +37,23 @@ import { IssueCard, KeyItemCard } from '@/components/dashboard/kanban-card'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { WeeklyUpdateDialog } from '@/components/dashboard/weekly-update-dialog'
+import { ActionListDialog } from '@/components/dashboard/action-list-dialog'
 import { ItemLinkDialog, type LinkSourceTarget } from '@/components/dashboard/item-link-dialog'
 import { KanbanTableView } from '@/components/dashboard/kanban-table-view'
-import type { System, Issue, KeyItem, KeyItemType, WeeklyUpdate } from '@/types/schema'
+import type { System, Issue, KeyItem, KeyItemType, WeeklyUpdate, Action } from '@/types/schema'
 
 type UpdateTarget = {
   itemId: string
   itemTitle: string
   itemKind: 'issue' | 'keyItem'
   weeklyUpdates: WeeklyUpdate[]
+} | null
+
+type ActionTarget = {
+  itemId: string
+  itemTitle: string
+  itemKind: 'issue' | 'keyItem'
+  actions: Action[]
 } | null
 
 type ItemCategory = string
@@ -197,6 +205,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<KeyItem | null>(null)
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
+  const [actionTarget, setActionTarget] = useState<ActionTarget>(null)
   const groups = groupByStatus(system, activeFilters, priorityFilter, statusFilter)
   const hasItems = groups.open.length > 0 || groups['in-progress'].length > 0 || groups.closed.length > 0
 
@@ -217,6 +226,15 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
     }
   }
 
+  const openActions = (item: KanbanItem) => {
+    setActionTarget({
+      itemId: item.data.id,
+      itemTitle: item.data.title,
+      itemKind: item.kind === 'issue' ? 'issue' : 'keyItem',
+      actions: item.data.actions ?? [],
+    })
+  }
+
   const makeLinkInfo = (item: KanbanItem): LinkSourceTarget => ({
     systemId: system.id,
     itemId: item.data.id,
@@ -233,6 +251,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
           issue={item.data}
           onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }}
           onUpdateClick={() => openWeeklyUpdate(item)}
+          onActionClick={() => openActions(item)}
           linkMode={linkMode}
           linkSelected={isSelected}
           onLinkClick={() => onLinkClick?.(makeLinkInfo(item))}
@@ -245,6 +264,7 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
         keyItem={item.data}
         onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }}
         onUpdateClick={() => openWeeklyUpdate(item)}
+        onActionClick={() => openActions(item)}
         linkMode={linkMode}
         linkSelected={isSelected}
         onLinkClick={() => onLinkClick?.(makeLinkInfo(item))}
@@ -341,9 +361,9 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
               <div className="space-y-1.5">
                 {groups.closed.map((item) =>
                   item.kind === 'issue' ? (
-                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
+                    <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} onActionClick={() => openActions(item)} />
                   ) : (
-                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
+                    <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} onActionClick={() => openActions(item)} />
                   ),
                 )}
               </div>
@@ -377,6 +397,17 @@ function SystemColumn({ system, statusOption, onClick, activeFilters, priorityFi
           weeklyUpdates={updateTarget.weeklyUpdates}
         />
       )}
+      {actionTarget && (
+        <ActionListDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setActionTarget(null) }}
+          systemId={system.id}
+          itemId={actionTarget.itemId}
+          itemTitle={actionTarget.itemTitle}
+          itemKind={actionTarget.itemKind}
+          actions={actionTarget.actions}
+        />
+      )}
     </div>
   )
 }
@@ -397,6 +428,7 @@ function SingleSystemKanban({ system, activeFilters, priorityFilter, statusFilte
   const [keyItemFormOpen, setKeyItemFormOpen] = useState(false)
   const [keyItemDefaultType, setKeyItemDefaultType] = useState(keyItemTypes[0]?.id ?? 'milestone')
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget>(null)
+  const [actionTarget, setActionTarget] = useState<ActionTarget>(null)
 
   const groups = groupByStatus(system, activeFilters, priorityFilter, statusFilter)
 
@@ -417,13 +449,22 @@ function SingleSystemKanban({ system, activeFilters, priorityFilter, statusFilte
     }
   }
 
+  const openActions = (item: KanbanItem) => {
+    setActionTarget({
+      itemId: item.data.id,
+      itemTitle: item.data.title,
+      itemKind: item.kind === 'issue' ? 'issue' : 'keyItem',
+      actions: item.data.actions ?? [],
+    })
+  }
+
   const renderItems = (items: KanbanItem[]) => (
     <div className="space-y-1.5">
       {items.map((item) =>
         item.kind === 'issue' ? (
-          <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
+          <IssueCard key={item.data.id} issue={item.data} onClick={() => { setEditingIssue(item.data); setIssueFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} onActionClick={() => openActions(item)} />
         ) : (
-          <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} />
+          <KeyItemCard key={item.data.id} keyItem={item.data} onClick={() => { setEditingKeyItem(item.data); setKeyItemFormOpen(true) }} onUpdateClick={() => openWeeklyUpdate(item)} onActionClick={() => openActions(item)} />
         ),
       )}
     </div>
@@ -494,6 +535,17 @@ function SingleSystemKanban({ system, activeFilters, priorityFilter, statusFilte
           itemTitle={updateTarget.itemTitle}
           itemKind={updateTarget.itemKind}
           weeklyUpdates={updateTarget.weeklyUpdates}
+        />
+      )}
+      {actionTarget && (
+        <ActionListDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setActionTarget(null) }}
+          systemId={system.id}
+          itemId={actionTarget.itemId}
+          itemTitle={actionTarget.itemTitle}
+          itemKind={actionTarget.itemKind}
+          actions={actionTarget.actions}
         />
       )}
     </>
