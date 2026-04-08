@@ -1,12 +1,45 @@
 'use client'
 
-import React, { useState, useCallback, useRef } from 'react'
-import { Flame, ExternalLink, List, Users } from 'lucide-react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Flame, ExternalLink, List, Users } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { getCurrentWeek, getPreviousWeek } from '@/lib/week'
-import type { System, Issue, KeyItem, Action } from '@/types/schema'
+import type { System, Issue, KeyItem, Action, ActionStatus } from '@/types/schema'
+
+// --- 列幅 localStorage 永続化 ---
+function loadColWidths(key: string, defaults: number[]): number[] {
+  if (typeof window === 'undefined') return defaults
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return defaults
+    const parsed = JSON.parse(raw) as number[]
+    if (!Array.isArray(parsed) || parsed.length !== defaults.length) return defaults
+    return parsed.map((n, i) => (typeof n === 'number' && n > 0 ? n : defaults[i]))
+  } catch {
+    return defaults
+  }
+}
+function saveColWidths(key: string, widths: number[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(key, JSON.stringify(widths))
+  } catch {
+    // ignore
+  }
+}
+
+function usePersistentColWidths(storageKey: string, defaults: number[]) {
+  const [widths, setWidths] = useState<number[]>(() => loadColWidths(storageKey, defaults))
+  useEffect(() => {
+    saveColWidths(storageKey, widths)
+  }, [storageKey, widths])
+  return [widths, setWidths] as const
+}
+
+const ITEM_COL_STORAGE_KEY = 'project-dashboard-item-col-widths'
+const ACTION_COL_STORAGE_KEY = 'project-dashboard-action-col-widths'
 
 const actionStatusLabels: Record<string, { label: string; color: string }> = {
   pending: { label: '未着手', color: '#6b7280' },
@@ -187,6 +220,25 @@ const columns = [
   { key: 'lastWeekComment', label: '先週のコメント', defaultWidth: 200 },
 ]
 
+type ActionSortKey = 'owner' | 'status' | 'dueDate' | 'systemName'
+
+const actionColumns: { key: string; label: string; defaultWidth: number; sortKey?: ActionSortKey }[] = [
+  { key: 'owner', label: '担当者', defaultWidth: 120, sortKey: 'owner' },
+  { key: 'description', label: '内容', defaultWidth: 320 },
+  { key: 'status', label: 'ステータス', defaultWidth: 100, sortKey: 'status' },
+  { key: 'dueDate', label: '期限', defaultWidth: 110, sortKey: 'dueDate' },
+  { key: 'parent', label: '親アイテム', defaultWidth: 240 },
+  { key: 'system', label: 'システム', defaultWidth: 140, sortKey: 'systemName' },
+  { key: 'link', label: '', defaultWidth: 40 },
+]
+
+const actionStatusOrder: Record<string, number> = {
+  'in-progress': 0,
+  pending: 1,
+  'on-hold': 2,
+  completed: 3,
+}
+
 interface KanbanTableViewProps {
   systems: System[]
   activeFilters: Set<ItemCategory>
@@ -201,9 +253,18 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
 
   const [editingIssue, setEditingIssue] = useState<{ systemId: string; issue: Issue } | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<{ systemId: string; keyItem: KeyItem } | null>(null)
-  const [colWidths, setColWidths] = useState(() => columns.map((c) => c.defaultWidth))
+  const [colWidths, setColWidths] = usePersistentColWidths(
+    ITEM_COL_STORAGE_KEY,
+    columns.map((c) => c.defaultWidth),
+  )
+  const [actionColWidths, setActionColWidths] = usePersistentColWidths(
+    ACTION_COL_STORAGE_KEY,
+    actionColumns.map((c) => c.defaultWidth),
+  )
   const [viewMode, setViewMode] = useState<ViewMode>('items')
   const [groupMode, setGroupMode] = useState<ActionGroupMode>('none')
+  const [actionStatusFilterSet, setActionStatusFilterSet] = useState<Set<ActionStatus>>(new Set())
+  const [actionSort, setActionSort] = useState<{ key: ActionSortKey; dir: 'asc' | 'desc' } | null>(null)
 
   const items = flattenItems(systems, activeFilters, selectedSystemId, statusFilter)
 
@@ -216,29 +277,39 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
     grouped.get(item.systemId)!.items.push(item)
   }
 
-  // Resize logic
+  // Resize logic (generic)
   const resizingRef = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null)
 
-  const onMouseDown = useCallback((colIndex: number, e: React.MouseEvent) => {
-    e.preventDefault()
-    resizingRef.current = { colIndex, startX: e.clientX, startWidth: colWidths[colIndex] }
+  const makeMouseDown = useCallback(
+    (
+      widths: number[],
+      setWidths: React.Dispatch<React.SetStateAction<number[]>>,
+    ) =>
+    (colIndex: number, e: React.MouseEvent) => {
+      e.preventDefault()
+      resizingRef.current = { colIndex, startX: e.clientX, startWidth: widths[colIndex] }
 
-    const onMouseMove = (ev: MouseEvent) => {
-      if (!resizingRef.current) return
-      const diff = ev.clientX - resizingRef.current.startX
-      const newWidth = Math.max(40, resizingRef.current.startWidth + diff)
-      setColWidths((prev) => prev.map((w, i) => (i === resizingRef.current!.colIndex ? newWidth : w)))
-    }
+      const onMouseMove = (ev: MouseEvent) => {
+        if (!resizingRef.current) return
+        const diff = ev.clientX - resizingRef.current.startX
+        const newWidth = Math.max(40, resizingRef.current.startWidth + diff)
+        setWidths((prev) => prev.map((w, i) => (i === resizingRef.current!.colIndex ? newWidth : w)))
+      }
 
-    const onMouseUp = () => {
-      resizingRef.current = null
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
-    }
+      const onMouseUp = () => {
+        resizingRef.current = null
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
+      }
 
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
-  }, [colWidths])
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    },
+    [],
+  )
+
+  const onMouseDown = makeMouseDown(colWidths, setColWidths)
+  const onActionMouseDown = makeMouseDown(actionColWidths, setActionColWidths)
 
   const handleRowClick = (item: FlatItem) => {
     if (item.kind === 'issue' && item.issue) {
@@ -322,12 +393,42 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
   }
 
   const totalWidth = colWidths.reduce((a, b) => a + b, 0)
+  const actionTotalWidth = actionColWidths.reduce((a, b) => a + b, 0)
 
   // --- Action view data ---
   const allActions = flattenActions(systems, selectedSystemId)
-  const actionStatusFilter = statusFilter
-  // マッピング: items view の status filter はアイテム用。アクション表示では無視する
-  const filteredActions = allActions
+
+  // status filter
+  const filteredActions0 =
+    actionStatusFilterSet.size === 0
+      ? allActions
+      : allActions.filter((fa) => actionStatusFilterSet.has(fa.action.status))
+
+  // sort
+  const filteredActions = actionSort
+    ? [...filteredActions0].sort((a, b) => {
+        const key = actionSort.key
+        let av: string | number = ''
+        let bv: string | number = ''
+        if (key === 'owner') {
+          av = a.action.owner ?? ''
+          bv = b.action.owner ?? ''
+        } else if (key === 'status') {
+          av = actionStatusOrder[a.action.status] ?? 99
+          bv = actionStatusOrder[b.action.status] ?? 99
+        } else if (key === 'dueDate') {
+          // 空の期限は末尾に送る
+          av = a.action.dueDate || '9999-12-31'
+          bv = b.action.dueDate || '9999-12-31'
+        } else if (key === 'systemName') {
+          av = a.systemName ?? ''
+          bv = b.systemName ?? ''
+        }
+        if (av < bv) return actionSort.dir === 'asc' ? -1 : 1
+        if (av > bv) return actionSort.dir === 'asc' ? 1 : -1
+        return 0
+      })
+    : filteredActions0
 
   const actionsGrouped = new Map<string, FlatAction[]>()
   if (viewMode === 'actions' && groupMode === 'owner') {
@@ -338,6 +439,23 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
     }
   }
 
+  const toggleActionSort = (key: ActionSortKey) => {
+    setActionSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: 'asc' }
+      if (prev.dir === 'asc') return { key, dir: 'desc' }
+      return null
+    })
+  }
+
+  const toggleStatusFilter = (s: ActionStatus) => {
+    setActionStatusFilterSet((prev) => {
+      const next = new Set(prev)
+      if (next.has(s)) next.delete(s)
+      else next.add(s)
+      return next
+    })
+  }
+
   const openParent = (fa: FlatAction) => {
     if (fa.parentKind === 'issue' && fa.issue) {
       setEditingIssue({ systemId: fa.systemId, issue: fa.issue })
@@ -345,6 +463,13 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
       setEditingKeyItem({ systemId: fa.systemId, keyItem: fa.keyItem })
     }
   }
+
+  const actionCellStyle = (i: number): React.CSSProperties => ({
+    padding: '0.4em 0.6em',
+    width: actionColWidths[i],
+    maxWidth: actionColWidths[i],
+    overflow: 'hidden',
+  })
 
   const renderActionRow = (fa: FlatAction) => {
     const a = fa.action
@@ -358,19 +483,19 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
         className="cursor-pointer hover:bg-accent/50 border-b border-border"
         onClick={() => openParent(fa)}
       >
-        <td style={{ padding: '0.4em 0.6em', fontSize: '0.85em', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <td style={{ ...actionCellStyle(0), fontSize: '0.85em', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
           {a.owner || <span className="text-muted-foreground">(未設定)</span>}
         </td>
         <td
           className="text-foreground"
-          style={{ padding: '0.4em 0.6em', fontSize: '0.85em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+          style={{ ...actionCellStyle(1), fontSize: '0.85em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
         >
           {a.description}
         </td>
-        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', whiteSpace: 'nowrap' }}>
+        <td style={{ ...actionCellStyle(2), fontSize: '0.8em', whiteSpace: 'nowrap' }}>
           <span style={{ color: s.color, fontWeight: 600 }}>● {s.label}</span>
         </td>
-        <td style={{ padding: '0.4em 0.6em', fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+        <td style={{ ...actionCellStyle(3), fontSize: '0.85em', whiteSpace: 'nowrap' }}>
           {a.dueDate && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2em', color: overdue ? '#dc2626' : undefined }}>
               {overdue && <Flame style={{ width: '1em', height: '1em' }} />}
@@ -378,7 +503,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
             </span>
           )}
         </td>
-        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', whiteSpace: 'nowrap', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <td style={{ ...actionCellStyle(4), fontSize: '0.8em', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
           <span
             style={{
               fontSize: '0.9em',
@@ -393,10 +518,13 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
           </span>
           <span>{fa.parentTitle}</span>
         </td>
-        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', whiteSpace: 'nowrap' }} className="text-muted-foreground">
+        <td
+          style={{ ...actionCellStyle(5), fontSize: '0.8em', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+          className="text-muted-foreground"
+        >
           {fa.systemName}
         </td>
-        <td style={{ padding: '0.4em 0.6em', fontSize: '0.85em', width: 30 }}>
+        <td style={{ ...actionCellStyle(6), fontSize: '0.85em' }}>
           {a.externalLink && (
             <a
               href={a.externalLink}
@@ -416,14 +544,56 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
 
   const actionTableHeader = (
     <thead>
-      <tr className="border-b border-border text-muted-foreground" style={{ fontSize: '0.8em' }}>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>担当者</th>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>内容</th>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>ステータス</th>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>期限</th>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>親アイテム</th>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>システム</th>
-        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}></th>
+      <tr className="border-b border-border" style={{ fontSize: '0.8em' }}>
+        {actionColumns.map((col, i) => {
+          const isSorted = actionSort?.key === col.sortKey
+          const sortIcon =
+            isSorted && actionSort
+              ? actionSort.dir === 'asc'
+                ? <ArrowUp className="h-3 w-3" />
+                : <ArrowDown className="h-3 w-3" />
+              : col.sortKey
+                ? <ArrowUpDown className="h-3 w-3 opacity-40" />
+                : null
+          return (
+            <th
+              key={col.key}
+              className="text-muted-foreground"
+              style={{
+                padding: '0.5em 0.6em',
+                textAlign: 'left',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                width: actionColWidths[i],
+                position: 'relative',
+                userSelect: 'none',
+                cursor: col.sortKey ? 'pointer' : 'default',
+              }}
+              onClick={() => col.sortKey && toggleActionSort(col.sortKey)}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25em' }}>
+                {col.label}
+                {sortIcon}
+              </span>
+              <div
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  cursor: 'col-resize',
+                  background: 'transparent',
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  onActionMouseDown(i, e)
+                }}
+                className="hover:bg-primary/30"
+              />
+            </th>
+          )
+        })}
       </tr>
     </thead>
   )
@@ -466,7 +636,46 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
               担当別
             </button>
           </div>
-          <span className="text-xs text-muted-foreground">{filteredActions.length} 件</span>
+          <div className="flex items-center gap-1">
+            {(['pending', 'in-progress', 'completed', 'on-hold'] as ActionStatus[]).map((s) => {
+              const info = actionStatusLabels[s]
+              const active = actionStatusFilterSet.has(s)
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggleStatusFilter(s)}
+                  className={`px-2 py-1 rounded-md border text-xs ${active ? '' : 'opacity-50 hover:opacity-80'}`}
+                  style={{
+                    borderColor: info.color,
+                    color: active ? '#fff' : info.color,
+                    backgroundColor: active ? info.color : 'transparent',
+                  }}
+                >
+                  {info.label}
+                </button>
+              )
+            })}
+            {actionStatusFilterSet.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setActionStatusFilterSet(new Set())}
+                className="text-xs text-muted-foreground hover:text-foreground underline ml-1"
+              >
+                クリア
+              </button>
+            )}
+          </div>
+          {actionSort && (
+            <button
+              type="button"
+              onClick={() => setActionSort(null)}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              ソート解除
+            </button>
+          )}
+          <span className="text-xs text-muted-foreground ml-auto">{filteredActions.length} 件</span>
         </>
       )}
     </div>
@@ -509,7 +718,14 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
       <>
         {toggleBar}
         <div className="rounded-lg border bg-card overflow-auto">
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'inherit' }}>
+          <table
+            style={{
+              width: actionTotalWidth,
+              tableLayout: 'fixed',
+              borderCollapse: 'collapse',
+              fontSize: 'inherit',
+            }}
+          >
             {actionTableHeader}
             <tbody>
               {groupMode === 'owner'
@@ -519,7 +735,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
                       <React.Fragment key={owner}>
                         <tr>
                           <td
-                            colSpan={7}
+                            colSpan={actionColumns.length}
                             style={{ padding: '0.5em 0.6em', fontWeight: 600, fontSize: '0.85em' }}
                             className="bg-muted"
                           >
