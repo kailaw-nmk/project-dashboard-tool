@@ -1,12 +1,73 @@
 'use client'
 
 import React, { useState, useCallback, useRef } from 'react'
-import { Flame } from 'lucide-react'
+import { Flame, ExternalLink, List, Users } from 'lucide-react'
 import { useProjectStore } from '@/stores/project-store'
 import { IssueFormDialog } from '@/components/system/issue-form-dialog'
 import { KeyItemFormDialog } from '@/components/system/key-item-form-dialog'
 import { getCurrentWeek, getPreviousWeek } from '@/lib/week'
 import type { System, Issue, KeyItem, Action } from '@/types/schema'
+
+const actionStatusLabels: Record<string, { label: string; color: string }> = {
+  pending: { label: '未着手', color: '#6b7280' },
+  'in-progress': { label: '対応中', color: '#d97706' },
+  completed: { label: '完了', color: '#16a34a' },
+  'on-hold': { label: '保留', color: '#9333ea' },
+}
+
+type ViewMode = 'items' | 'actions'
+type ActionGroupMode = 'none' | 'owner'
+
+type FlatAction = {
+  action: Action
+  systemId: string
+  systemName: string
+  parentId: string
+  parentTitle: string
+  parentType: string
+  parentKind: 'issue' | 'keyItem'
+  issue?: Issue
+  keyItem?: KeyItem
+}
+
+function flattenActions(
+  systems: System[],
+  selectedSystemId: string | null,
+): FlatAction[] {
+  const targets = selectedSystemId ? systems.filter((s) => s.id === selectedSystemId) : systems
+  const result: FlatAction[] = []
+  for (const sys of targets) {
+    for (const issue of sys.issues) {
+      for (const a of issue.actions ?? []) {
+        result.push({
+          action: a,
+          systemId: sys.id,
+          systemName: sys.name,
+          parentId: issue.id,
+          parentTitle: issue.title,
+          parentType: 'issue',
+          parentKind: 'issue',
+          issue,
+        })
+      }
+    }
+    for (const ki of sys.keyItems) {
+      for (const a of ki.actions ?? []) {
+        result.push({
+          action: a,
+          systemId: sys.id,
+          systemName: sys.name,
+          parentId: ki.id,
+          parentTitle: ki.title,
+          parentType: ki.type,
+          parentKind: 'keyItem',
+          keyItem: ki,
+        })
+      }
+    }
+  }
+  return result
+}
 
 type ItemCategory = string
 
@@ -141,6 +202,8 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
   const [editingIssue, setEditingIssue] = useState<{ systemId: string; issue: Issue } | null>(null)
   const [editingKeyItem, setEditingKeyItem] = useState<{ systemId: string; keyItem: KeyItem } | null>(null)
   const [colWidths, setColWidths] = useState(() => columns.map((c) => c.defaultWidth))
+  const [viewMode, setViewMode] = useState<ViewMode>('items')
+  const [groupMode, setGroupMode] = useState<ActionGroupMode>('none')
 
   const items = flattenItems(systems, activeFilters, selectedSystemId, statusFilter)
 
@@ -258,14 +321,239 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
     )
   }
 
-  if (items.length === 0) {
-    return <p className="text-muted-foreground text-center py-8" style={{ fontSize: '0.9em' }}>アイテムなし</p>
+  const totalWidth = colWidths.reduce((a, b) => a + b, 0)
+
+  // --- Action view data ---
+  const allActions = flattenActions(systems, selectedSystemId)
+  const actionStatusFilter = statusFilter
+  // マッピング: items view の status filter はアイテム用。アクション表示では無視する
+  const filteredActions = allActions
+
+  const actionsGrouped = new Map<string, FlatAction[]>()
+  if (viewMode === 'actions' && groupMode === 'owner') {
+    for (const fa of filteredActions) {
+      const key = fa.action.owner || '(未設定)'
+      if (!actionsGrouped.has(key)) actionsGrouped.set(key, [])
+      actionsGrouped.get(key)!.push(fa)
+    }
   }
 
-  const totalWidth = colWidths.reduce((a, b) => a + b, 0)
+  const openParent = (fa: FlatAction) => {
+    if (fa.parentKind === 'issue' && fa.issue) {
+      setEditingIssue({ systemId: fa.systemId, issue: fa.issue })
+    } else if (fa.parentKind === 'keyItem' && fa.keyItem) {
+      setEditingKeyItem({ systemId: fa.systemId, keyItem: fa.keyItem })
+    }
+  }
+
+  const renderActionRow = (fa: FlatAction) => {
+    const a = fa.action
+    const s = actionStatusLabels[a.status] ?? { label: a.status, color: '#6b7280' }
+    const overdue = isOverdue(a.dueDate, a.status === 'completed' ? 'closed' : 'open')
+    const parentTypeLabel = dynamicTypeLabels[fa.parentType] ?? typeLabels[fa.parentType] ?? fa.parentType
+    const parentColor = typeColors[fa.parentType] ?? '#6b7280'
+    return (
+      <tr
+        key={`${fa.parentId}-${a.id}`}
+        className="cursor-pointer hover:bg-accent/50 border-b border-border"
+        onClick={() => openParent(fa)}
+      >
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.85em', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {a.owner || <span className="text-muted-foreground">(未設定)</span>}
+        </td>
+        <td
+          className="text-foreground"
+          style={{ padding: '0.4em 0.6em', fontSize: '0.85em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+        >
+          {a.description}
+        </td>
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', whiteSpace: 'nowrap' }}>
+          <span style={{ color: s.color, fontWeight: 600 }}>● {s.label}</span>
+        </td>
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.85em', whiteSpace: 'nowrap' }}>
+          {a.dueDate && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2em', color: overdue ? '#dc2626' : undefined }}>
+              {overdue && <Flame style={{ width: '1em', height: '1em' }} />}
+              {a.dueDate}
+            </span>
+          )}
+        </td>
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', whiteSpace: 'nowrap', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span
+            style={{
+              fontSize: '0.9em',
+              padding: '0.1em 0.35em',
+              border: `1px solid ${parentColor}`,
+              borderRadius: 3,
+              color: parentColor,
+              marginRight: '0.4em',
+            }}
+          >
+            {parentTypeLabel}
+          </span>
+          <span>{fa.parentTitle}</span>
+        </td>
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.8em', whiteSpace: 'nowrap' }} className="text-muted-foreground">
+          {fa.systemName}
+        </td>
+        <td style={{ padding: '0.4em 0.6em', fontSize: '0.85em', width: 30 }}>
+          {a.externalLink && (
+            <a
+              href={a.externalLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-500 hover:text-blue-600"
+              title={a.externalLink}
+            >
+              <ExternalLink style={{ width: '1em', height: '1em' }} />
+            </a>
+          )}
+        </td>
+      </tr>
+    )
+  }
+
+  const actionTableHeader = (
+    <thead>
+      <tr className="border-b border-border text-muted-foreground" style={{ fontSize: '0.8em' }}>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>担当者</th>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>内容</th>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>ステータス</th>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>期限</th>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>親アイテム</th>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}>システム</th>
+        <th style={{ padding: '0.5em 0.6em', textAlign: 'left', fontWeight: 500 }}></th>
+      </tr>
+    </thead>
+  )
+
+  const toggleBar = (
+    <div className="flex items-center gap-2 mb-2">
+      <div className="flex rounded-md border overflow-hidden text-xs">
+        <button
+          type="button"
+          onClick={() => setViewMode('items')}
+          className={`flex items-center gap-1 px-2.5 py-1 ${viewMode === 'items' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+        >
+          <List className="h-3.5 w-3.5" />
+          アイテム
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('actions')}
+          className={`flex items-center gap-1 px-2.5 py-1 border-l ${viewMode === 'actions' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+        >
+          <Users className="h-3.5 w-3.5" />
+          アクション
+        </button>
+      </div>
+      {viewMode === 'actions' && (
+        <>
+          <div className="flex rounded-md border overflow-hidden text-xs">
+            <button
+              type="button"
+              onClick={() => setGroupMode('none')}
+              className={`px-2.5 py-1 ${groupMode === 'none' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+            >
+              全件
+            </button>
+            <button
+              type="button"
+              onClick={() => setGroupMode('owner')}
+              className={`px-2.5 py-1 border-l ${groupMode === 'owner' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+            >
+              担当別
+            </button>
+          </div>
+          <span className="text-xs text-muted-foreground">{filteredActions.length} 件</span>
+        </>
+      )}
+    </div>
+  )
+
+  const dialogs = (
+    <>
+      {editingIssue && (
+        <IssueFormDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditingIssue(null) }}
+          systemId={editingIssue.systemId}
+          editData={editingIssue.issue}
+        />
+      )}
+      {editingKeyItem && (
+        <KeyItemFormDialog
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditingKeyItem(null) }}
+          systemId={editingKeyItem.systemId}
+          editData={editingKeyItem.keyItem}
+        />
+      )}
+    </>
+  )
+
+  if (viewMode === 'actions') {
+    if (filteredActions.length === 0) {
+      return (
+        <>
+          {toggleBar}
+          <p className="text-muted-foreground text-center py-8" style={{ fontSize: '0.9em' }}>
+            アクションはありません
+          </p>
+          {dialogs}
+        </>
+      )
+    }
+    return (
+      <>
+        {toggleBar}
+        <div className="rounded-lg border bg-card overflow-auto">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'inherit' }}>
+            {actionTableHeader}
+            <tbody>
+              {groupMode === 'owner'
+                ? Array.from(actionsGrouped.entries())
+                    .sort((a, b) => a[0].localeCompare(b[0], 'ja'))
+                    .map(([owner, list]) => (
+                      <React.Fragment key={owner}>
+                        <tr>
+                          <td
+                            colSpan={7}
+                            style={{ padding: '0.5em 0.6em', fontWeight: 600, fontSize: '0.85em' }}
+                            className="bg-muted"
+                          >
+                            {owner}
+                            <span className="text-muted-foreground" style={{ fontWeight: 400, marginLeft: '0.5em' }}>
+                              ({list.length})
+                            </span>
+                          </td>
+                        </tr>
+                        {list.map(renderActionRow)}
+                      </React.Fragment>
+                    ))
+                : filteredActions.map(renderActionRow)}
+            </tbody>
+          </table>
+        </div>
+        {dialogs}
+      </>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <>
+        {toggleBar}
+        <p className="text-muted-foreground text-center py-8" style={{ fontSize: '0.9em' }}>アイテムなし</p>
+        {dialogs}
+      </>
+    )
+  }
 
   return (
     <>
+      {toggleBar}
       <div className="rounded-lg border bg-card overflow-auto">
         <table style={{ width: totalWidth, tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: 'inherit' }}>
           <thead>
@@ -310,23 +598,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
           </tbody>
         </table>
       </div>
-
-      {editingIssue && (
-        <IssueFormDialog
-          open={true}
-          onOpenChange={(open) => { if (!open) setEditingIssue(null) }}
-          systemId={editingIssue.systemId}
-          editData={editingIssue.issue}
-        />
-      )}
-      {editingKeyItem && (
-        <KeyItemFormDialog
-          open={true}
-          onOpenChange={(open) => { if (!open) setEditingKeyItem(null) }}
-          systemId={editingKeyItem.systemId}
-          editData={editingKeyItem.keyItem}
-        />
-      )}
+      {dialogs}
     </>
   )
 }
