@@ -85,8 +85,8 @@ function flattenActions(
           parentType: 'issue',
           parentKind: 'issue',
           issue,
-          weeklyComment: getWeeklyComment(issue.weeklyUpdates, currentWeek),
-          lastWeekComment: getWeeklyComment(issue.weeklyUpdates, previousWeek),
+          weeklyComment: getWeeklyComment(a.weeklyUpdates, currentWeek),
+          lastWeekComment: getWeeklyComment(a.weeklyUpdates, previousWeek),
         })
       }
     }
@@ -101,8 +101,8 @@ function flattenActions(
           parentType: ki.type,
           parentKind: 'keyItem',
           keyItem: ki,
-          weeklyComment: getWeeklyComment(ki.weeklyUpdates, currentWeek),
-          lastWeekComment: getWeeklyComment(ki.weeklyUpdates, previousWeek),
+          weeklyComment: getWeeklyComment(a.weeklyUpdates, currentWeek),
+          lastWeekComment: getWeeklyComment(a.weeklyUpdates, previousWeek),
         })
       }
     }

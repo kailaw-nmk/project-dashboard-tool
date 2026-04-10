@@ -62,6 +62,7 @@ export const ActionSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   history: z.array(ActionHistoryEntrySchema).default([]),
+  weeklyUpdates: z.array(WeeklyUpdateSchema).default([]),
 })
 
 // --- Issue ---

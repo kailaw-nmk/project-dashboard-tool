@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { getCurrentWeek, getPreviousWeek, upsertWeeklyUpdate } from '@/lib/week'
+import { Badge } from '@/components/ui/badge'
 import type { Action, ActionStatus } from '@/types/schema'
 
 interface ActionListSectionProps {
@@ -44,6 +46,7 @@ function emptyAction(): Action {
     createdAt: nowStr,
     updatedAt: nowStr,
     history: [],
+    weeklyUpdates: [],
   }
 }
 
@@ -184,6 +187,36 @@ export const ActionListSection = forwardRef<ActionListSectionHandle, ActionListS
                       </a>
                     )}
                   </div>
+                  {/* 週次コメント */}
+                  {(() => {
+                    const currentWeek = getCurrentWeek()
+                    const previousWeek = getPreviousWeek()
+                    const currentComment = (a.weeklyUpdates ?? []).find((u) => u.week === currentWeek)?.content ?? ''
+                    const prevComment = (a.weeklyUpdates ?? []).find((u) => u.week === previousWeek)?.content ?? ''
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground">今週</span>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0">{currentWeek}</Badge>
+                        </div>
+                        <textarea
+                          value={currentComment}
+                          onChange={(e) => {
+                            const newUpdates = upsertWeeklyUpdate(a.weeklyUpdates ?? [], currentWeek, e.target.value)
+                            handleChange(a.id, 'weeklyUpdates', newUpdates)
+                          }}
+                          placeholder="今週の進捗・状況..."
+                          rows={1}
+                          className="w-full rounded border border-input bg-transparent px-2 py-1 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                        />
+                        {prevComment && (
+                          <div className="text-[10px] text-muted-foreground pl-1">
+                            <span className="font-medium">先週:</span> {prevComment}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                   {(a.history ?? []).length > 0 && (
                     <div>
                       <button
