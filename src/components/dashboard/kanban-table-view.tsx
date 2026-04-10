@@ -39,7 +39,7 @@ function usePersistentColWidths(storageKey: string, defaults: number[]) {
 }
 
 const ITEM_COL_STORAGE_KEY = 'project-dashboard-item-col-widths'
-const ACTION_COL_STORAGE_KEY = 'project-dashboard-action-col-widths'
+const ACTION_COL_STORAGE_KEY = 'project-dashboard-action-col-widths-v2'
 
 const actionStatusLabels: Record<string, { label: string; color: string }> = {
   pending: { label: '未着手', color: '#6b7280' },
@@ -61,6 +61,8 @@ type FlatAction = {
   parentKind: 'issue' | 'keyItem'
   issue?: Issue
   keyItem?: KeyItem
+  weeklyComment: string
+  lastWeekComment: string
 }
 
 function flattenActions(
@@ -69,6 +71,8 @@ function flattenActions(
 ): FlatAction[] {
   const targets = selectedSystemId ? systems.filter((s) => s.id === selectedSystemId) : systems
   const result: FlatAction[] = []
+  const currentWeek = getCurrentWeek()
+  const previousWeek = getPreviousWeek()
   for (const sys of targets) {
     for (const issue of sys.issues) {
       for (const a of issue.actions ?? []) {
@@ -81,6 +85,8 @@ function flattenActions(
           parentType: 'issue',
           parentKind: 'issue',
           issue,
+          weeklyComment: getWeeklyComment(issue.weeklyUpdates, currentWeek),
+          lastWeekComment: getWeeklyComment(issue.weeklyUpdates, previousWeek),
         })
       }
     }
@@ -95,6 +101,8 @@ function flattenActions(
           parentType: ki.type,
           parentKind: 'keyItem',
           keyItem: ki,
+          weeklyComment: getWeeklyComment(ki.weeklyUpdates, currentWeek),
+          lastWeekComment: getWeeklyComment(ki.weeklyUpdates, previousWeek),
         })
       }
     }
@@ -223,13 +231,15 @@ const columns = [
 type ActionSortKey = 'owner' | 'status' | 'dueDate' | 'systemName'
 
 const actionColumns: { key: string; label: string; defaultWidth: number; sortKey?: ActionSortKey }[] = [
-  { key: 'owner', label: '担当者', defaultWidth: 120, sortKey: 'owner' },
-  { key: 'description', label: '内容', defaultWidth: 320 },
-  { key: 'status', label: 'ステータス', defaultWidth: 100, sortKey: 'status' },
-  { key: 'dueDate', label: '期限', defaultWidth: 110, sortKey: 'dueDate' },
-  { key: 'parent', label: '親アイテム', defaultWidth: 240 },
-  { key: 'system', label: 'システム', defaultWidth: 140, sortKey: 'systemName' },
-  { key: 'link', label: '', defaultWidth: 40 },
+  { key: 'parent', label: '親アイテム', defaultWidth: 220 },
+  { key: 'owner', label: '担当者', defaultWidth: 100, sortKey: 'owner' },
+  { key: 'description', label: '内容', defaultWidth: 280 },
+  { key: 'status', label: 'ステータス', defaultWidth: 90, sortKey: 'status' },
+  { key: 'dueDate', label: '期限', defaultWidth: 100, sortKey: 'dueDate' },
+  { key: 'system', label: 'システム', defaultWidth: 120, sortKey: 'systemName' },
+  { key: 'link', label: '', defaultWidth: 30 },
+  { key: 'comment', label: '今週のコメント', defaultWidth: 200 },
+  { key: 'lastWeekComment', label: '先週のコメント', defaultWidth: 200 },
 ]
 
 const actionStatusOrder: Record<string, number> = {
@@ -323,7 +333,7 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
     const overdue = isOverdue(item.dueDate, item.status)
     const tColor = typeColors[item.type] ?? '#6b7280'
     const pColor = item.priority ? priorityColors[item.priority] : undefined
-    const cellStyle = (i: number): React.CSSProperties => ({ padding: '0.4em 0.6em', width: colWidths[i], maxWidth: colWidths[i], overflow: 'hidden' })
+    const wrapCell = (i: number): React.CSSProperties => ({ padding: '0.4em 0.6em', width: colWidths[i], maxWidth: colWidths[i], whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' })
 
     return (
       <tr
@@ -331,25 +341,25 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
         className="cursor-pointer hover:bg-accent/50 border-b border-border"
         onClick={() => handleRowClick(item)}
       >
-        <td style={cellStyle(0)}>
-          <span style={{ fontSize: '0.8em', padding: '0.1em 0.35em', border: `1px solid ${tColor}`, borderRadius: 3, color: tColor, whiteSpace: 'nowrap' }}>
+        <td style={wrapCell(0)}>
+          <span style={{ fontSize: '0.8em', padding: '0.1em 0.35em', border: `1px solid ${tColor}`, borderRadius: 3, color: tColor }}>
             {dynamicTypeLabels[item.type] ?? typeLabels[item.type] ?? item.type}
           </span>
         </td>
-        <td style={{ ...cellStyle(1), fontWeight: 500, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</td>
-        <td style={{ ...cellStyle(2), fontSize: '0.85em' }}>{statusLabels[item.status] ?? item.status}</td>
-        <td style={cellStyle(3)}>
+        <td style={{ ...wrapCell(1), fontWeight: 500 }}>{item.title}</td>
+        <td style={{ ...wrapCell(2), fontSize: '0.85em' }}>{statusLabels[item.status] ?? item.status}</td>
+        <td style={wrapCell(3)}>
           {item.priority && pColor && (
             <span style={{ fontSize: '0.8em', padding: '0.1em 0.35em', borderRadius: 3, color: '#fff', backgroundColor: pColor }}>
               {priorityLabels[item.priority]}
             </span>
           )}
         </td>
-        <td style={{ ...cellStyle(4), fontSize: '0.85em' }}>
+        <td style={{ ...wrapCell(4), fontSize: '0.85em' }}>
           {item.assignee && <span style={{ fontWeight: 700 }}>{item.assignee}</span>}
           {item.stakeholders && <span style={{ opacity: 0.6, marginLeft: '0.3em' }}>{item.stakeholders}</span>}
         </td>
-        <td style={{ ...cellStyle(5), fontSize: '0.85em' }}>
+        <td style={{ ...wrapCell(5), fontSize: '0.85em' }}>
           {item.dueDate && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2em', color: overdue ? '#dc2626' : undefined }}>
               {overdue && <Flame style={{ width: '1em', height: '1em' }} />}
@@ -357,18 +367,18 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
             </span>
           )}
         </td>
-        <td style={{ ...cellStyle(6), fontSize: '0.8em' }}>
+        <td style={{ ...wrapCell(6), fontSize: '0.8em' }}>
           {item.actions.length > 0 && (() => {
             const incomplete = item.actions.filter((a) => a.status !== 'completed').length
             const owners = Array.from(new Set(item.actions.filter((a) => a.status !== 'completed').map((a) => a.owner).filter(Boolean)))
             const allDone = incomplete === 0
             return (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
+              <span>
                 <span style={{ fontWeight: 600, color: allDone ? '#16a34a' : '#d97706' }}>
                   {incomplete}/{item.actions.length}
                 </span>
                 {owners.length > 0 && (
-                  <span style={{ opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ opacity: 0.7, marginLeft: '0.3em' }}>
                     {owners.join(', ')}
                   </span>
                 )}
@@ -378,13 +388,13 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
         </td>
         <td
           className="text-foreground"
-          style={{ ...cellStyle(7), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
+          style={{ ...wrapCell(7), fontSize: '0.8em' }}
         >
           {item.weeklyComment}
         </td>
         <td
           className="text-muted-foreground"
-          style={{ ...cellStyle(8), fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
+          style={{ ...wrapCell(8), fontSize: '0.8em' }}
         >
           {item.lastWeekComment}
         </td>
@@ -464,11 +474,13 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
     }
   }
 
-  const actionCellStyle = (i: number): React.CSSProperties => ({
+  const actionWrapCell = (i: number): React.CSSProperties => ({
     padding: '0.4em 0.6em',
     width: actionColWidths[i],
     maxWidth: actionColWidths[i],
-    overflow: 'hidden',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    overflow: 'visible',
   })
 
   const renderActionRow = (fa: FlatAction) => {
@@ -483,27 +495,8 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
         className="cursor-pointer hover:bg-accent/50 border-b border-border"
         onClick={() => openParent(fa)}
       >
-        <td style={{ ...actionCellStyle(0), fontSize: '0.85em', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-          {a.owner || <span className="text-muted-foreground">(未設定)</span>}
-        </td>
-        <td
-          className="text-foreground"
-          style={{ ...actionCellStyle(1), fontSize: '0.85em', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflow: 'visible' }}
-        >
-          {a.description}
-        </td>
-        <td style={{ ...actionCellStyle(2), fontSize: '0.8em', whiteSpace: 'nowrap' }}>
-          <span style={{ color: s.color, fontWeight: 600 }}>● {s.label}</span>
-        </td>
-        <td style={{ ...actionCellStyle(3), fontSize: '0.85em', whiteSpace: 'nowrap' }}>
-          {a.dueDate && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2em', color: overdue ? '#dc2626' : undefined }}>
-              {overdue && <Flame style={{ width: '1em', height: '1em' }} />}
-              {a.dueDate}
-            </span>
-          )}
-        </td>
-        <td style={{ ...actionCellStyle(4), fontSize: '0.8em', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        {/* 親アイテム (左端) */}
+        <td style={{ ...actionWrapCell(0), fontSize: '0.8em' }}>
           <span
             style={{
               fontSize: '0.9em',
@@ -516,15 +509,41 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
           >
             {parentTypeLabel}
           </span>
-          <span>{fa.parentTitle}</span>
+          <span style={{ fontWeight: 500 }}>{fa.parentTitle}</span>
         </td>
+        {/* 担当者 */}
+        <td style={{ ...actionWrapCell(1), fontSize: '0.85em', fontWeight: 600 }}>
+          {a.owner || <span className="text-muted-foreground">(未設定)</span>}
+        </td>
+        {/* 内容 */}
         <td
-          style={{ ...actionCellStyle(5), fontSize: '0.8em', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+          className="text-foreground"
+          style={{ ...actionWrapCell(2), fontSize: '0.85em' }}
+        >
+          {a.description}
+        </td>
+        {/* ステータス */}
+        <td style={{ ...actionWrapCell(3), fontSize: '0.8em' }}>
+          <span style={{ color: s.color, fontWeight: 600 }}>● {s.label}</span>
+        </td>
+        {/* 期限 */}
+        <td style={{ ...actionWrapCell(4), fontSize: '0.85em' }}>
+          {a.dueDate && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2em', color: overdue ? '#dc2626' : undefined }}>
+              {overdue && <Flame style={{ width: '1em', height: '1em' }} />}
+              {a.dueDate}
+            </span>
+          )}
+        </td>
+        {/* システム */}
+        <td
+          style={{ ...actionWrapCell(5), fontSize: '0.8em' }}
           className="text-muted-foreground"
         >
           {fa.systemName}
         </td>
-        <td style={{ ...actionCellStyle(6), fontSize: '0.85em' }}>
+        {/* リンク */}
+        <td style={{ ...actionWrapCell(6), fontSize: '0.85em' }}>
           {a.externalLink && (
             <a
               href={a.externalLink}
@@ -537,6 +556,20 @@ export function KanbanTableView({ systems, activeFilters, selectedSystemId, stat
               <ExternalLink style={{ width: '1em', height: '1em' }} />
             </a>
           )}
+        </td>
+        {/* 今週のコメント */}
+        <td
+          className="text-foreground"
+          style={{ ...actionWrapCell(7), fontSize: '0.8em' }}
+        >
+          {fa.weeklyComment}
+        </td>
+        {/* 先週のコメント */}
+        <td
+          className="text-muted-foreground"
+          style={{ ...actionWrapCell(8), fontSize: '0.8em' }}
+        >
+          {fa.lastWeekComment}
         </td>
       </tr>
     )
