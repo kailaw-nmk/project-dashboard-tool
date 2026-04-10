@@ -2,6 +2,7 @@
 
 import { toPng } from 'html-to-image'
 import type { ProjectData } from '@/types/schema'
+import { getCurrentWeek, getPreviousWeek } from '@/lib/week'
 
 async function saveWithPicker(blob: Blob, suggestedName: string, accept: Record<string, string[]>): Promise<boolean> {
   if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
@@ -244,7 +245,7 @@ async function renderActionListOffscreen(
   const typeLabelsExport = buildExportTypeLabels(data)
   const container = document.createElement('div')
   container.style.cssText =
-    'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1400px;background:#fff;padding:32px;font-family:sans-serif;'
+    'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1800px;background:#fff;padding:32px;font-family:sans-serif;'
 
   const title = document.createElement('h2')
   title.textContent = `${data.projectName} — アクション一覧`
@@ -260,7 +261,9 @@ async function renderActionListOffscreen(
     ['内容', '1fr'],
     ['ステータス', '70px'],
     ['期限', '90px'],
-    ['親アイテム', '300px'],
+    ['親アイテム', '250px'],
+    ['今週のコメント', '200px'],
+    ['先週のコメント', '200px'],
   ] as const) {
     const th = document.createElement('span')
     th.textContent = label
@@ -276,7 +279,12 @@ async function renderActionListOffscreen(
     dueDate: string
     parentType: string
     parentTitle: string
+    weeklyComment: string
+    lastWeekComment: string
   }
+
+  const currentWeek = getCurrentWeek()
+  const previousWeek = getPreviousWeek()
 
   let totalRows = 0
 
@@ -299,6 +307,8 @@ async function renderActionListOffscreen(
             dueDate: a.dueDate ?? '',
             parentType: 'issue',
             parentTitle: issue.title,
+            weeklyComment: (a.weeklyUpdates ?? []).find((u) => u.week === currentWeek)?.content ?? '',
+            lastWeekComment: (a.weeklyUpdates ?? []).find((u) => u.week === previousWeek)?.content ?? '',
           })),
         })
       }
@@ -318,6 +328,8 @@ async function renderActionListOffscreen(
           dueDate: a.dueDate ?? '',
           parentType: ki.type,
           parentTitle: ki.title,
+          weeklyComment: (a.weeklyUpdates ?? []).find((u) => u.week === currentWeek)?.content ?? '',
+          lastWeekComment: (a.weeklyUpdates ?? []).find((u) => u.week === previousWeek)?.content ?? '',
         })),
       })
     }
@@ -380,8 +392,18 @@ async function renderActionListOffscreen(
 
         const parentSpan = document.createElement('span')
         parentSpan.textContent = `${typeLabelsExport[a.parentType] ?? a.parentType} / ${a.parentTitle}`
-        parentSpan.style.cssText = 'font-size:11px;color:#888;min-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
+        parentSpan.style.cssText = 'font-size:11px;color:#888;min-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
         row.appendChild(parentSpan)
+
+        const commentSpan = document.createElement('span')
+        commentSpan.textContent = a.weeklyComment
+        commentSpan.style.cssText = 'font-size:11px;min-width:200px;white-space:pre-wrap;word-break:break-word;color:#333;'
+        row.appendChild(commentSpan)
+
+        const lastCommentSpan = document.createElement('span')
+        lastCommentSpan.textContent = a.lastWeekComment
+        lastCommentSpan.style.cssText = 'font-size:11px;min-width:200px;white-space:pre-wrap;word-break:break-word;color:#888;'
+        row.appendChild(lastCommentSpan)
 
         container.appendChild(row)
       }
