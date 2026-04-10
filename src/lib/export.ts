@@ -245,32 +245,51 @@ async function renderActionListOffscreen(
   const typeLabelsExport = buildExportTypeLabels(data)
   const container = document.createElement('div')
   container.style.cssText =
-    'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;width:1800px;background:#fff;padding:32px;font-family:sans-serif;'
+    'position:fixed;left:0;top:0;z-index:-9999;pointer-events:none;background:#fff;padding:32px;font-family:sans-serif;'
 
   const title = document.createElement('h2')
   title.textContent = `${data.projectName} — アクション一覧`
   title.style.cssText = 'font-size:18px;font-weight:bold;margin-bottom:16px;color:#111;'
   container.appendChild(title)
 
-  // Table header
-  const thead = document.createElement('div')
-  thead.style.cssText =
-    'display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:11px;font-weight:500;color:#888;border-bottom:2px solid #e4e4e7;'
-  for (const [label, width] of [
-    ['担当者', '110px'],
-    ['内容', '1fr'],
-    ['ステータス', '70px'],
-    ['期限', '90px'],
-    ['親アイテム', '250px'],
-    ['今週のコメント', '200px'],
-    ['先週のコメント', '200px'],
-  ] as const) {
-    const th = document.createElement('span')
-    th.textContent = label
-    th.style.cssText = `${width === '1fr' ? 'flex:1;' : `min-width:${width};`}`
-    thead.appendChild(th)
+  // Column definitions (fixed widths)
+  const actionExportCols = [
+    { label: '担当者', width: 110 },
+    { label: '内容', width: 360 },
+    { label: 'ステータス', width: 80 },
+    { label: '期限', width: 90 },
+    { label: '親アイテム', width: 250 },
+    { label: '今週のコメント', width: 240 },
+    { label: '先週のコメント', width: 240 },
+  ]
+  const tableWidth = actionExportCols.reduce((s, c) => s + c.width, 0)
+
+  const table = document.createElement('table')
+  table.style.cssText = `width:${tableWidth}px;table-layout:fixed;border-collapse:collapse;font-size:12px;`
+
+  // colgroup
+  const colgroup = document.createElement('colgroup')
+  for (const col of actionExportCols) {
+    const colEl = document.createElement('col')
+    colEl.style.width = `${col.width}px`
+    colgroup.appendChild(colEl)
   }
-  container.appendChild(thead)
+  table.appendChild(colgroup)
+
+  // thead
+  const thead = document.createElement('thead')
+  const headRow = document.createElement('tr')
+  headRow.style.cssText = 'border-bottom:2px solid #e4e4e7;'
+  for (const col of actionExportCols) {
+    const th = document.createElement('th')
+    th.textContent = col.label
+    th.style.cssText = 'padding:6px 8px;text-align:left;font-size:11px;font-weight:500;color:#888;'
+    headRow.appendChild(th)
+  }
+  thead.appendChild(headRow)
+  table.appendChild(thead)
+
+  const tbody = document.createElement('tbody')
 
   type ActionRow = {
     owner: string
@@ -336,79 +355,88 @@ async function renderActionListOffscreen(
 
     if (groups.length === 0) continue
 
-    const sysHeader = document.createElement('div')
+    // System header row
+    const sysRow = document.createElement('tr')
+    const sysCell = document.createElement('td')
     const sysCount = groups.reduce((sum, g) => sum + g.actions.length, 0)
-    sysHeader.style.cssText =
-      'font-size:13px;font-weight:600;margin:14px 0 4px;padding:4px 8px;background:#f4f4f5;border-radius:4px;color:#333;'
-    sysHeader.textContent = `${system.name} (${sysCount}件)`
-    container.appendChild(sysHeader)
+    sysCell.colSpan = actionExportCols.length
+    sysCell.textContent = `${system.name} (${sysCount}件)`
+    sysCell.style.cssText = 'font-size:13px;font-weight:600;padding:10px 8px 4px;background:#f4f4f5;color:#333;'
+    sysRow.appendChild(sysCell)
+    tbody.appendChild(sysRow)
 
     for (const group of groups) {
-      // 親アイテムサブヘッダ
-      const subHeader = document.createElement('div')
-      subHeader.style.cssText =
-        'display:flex;align-items:center;gap:6px;margin:6px 0 2px;padding:2px 8px;font-size:11px;color:#555;'
-      const typeBadge = document.createElement('span')
-      typeBadge.textContent = typeLabelsExport[group.parentType] ?? group.parentType
+      // Parent item sub-header row
+      const subRow = document.createElement('tr')
+      const subCell = document.createElement('td')
+      subCell.colSpan = actionExportCols.length
+      subCell.style.cssText = 'padding:4px 8px 2px 12px;font-size:11px;color:#555;'
       const tc = typeColorsExport[group.parentType] ?? '#888'
-      typeBadge.style.cssText = `font-size:10px;padding:1px 5px;border:1px solid ${tc};border-radius:3px;color:${tc};`
-      subHeader.appendChild(typeBadge)
-      const parentTitleSpan = document.createElement('span')
-      parentTitleSpan.textContent = group.parentTitle
-      parentTitleSpan.style.cssText = 'font-weight:500;color:#333;'
-      subHeader.appendChild(parentTitleSpan)
-      container.appendChild(subHeader)
+      subCell.innerHTML = `<span style="font-size:10px;padding:1px 5px;border:1px solid ${tc};border-radius:3px;color:${tc};margin-right:6px;">${typeLabelsExport[group.parentType] ?? group.parentType}</span><span style="font-weight:500;color:#333;">${group.parentTitle}</span>`
+      subRow.appendChild(subCell)
+      tbody.appendChild(subRow)
 
       for (const a of group.actions) {
         totalRows++
-        const row = document.createElement('div')
-        row.style.cssText =
-          'display:flex;align-items:center;gap:8px;padding:4px 8px 4px 16px;font-size:12px;border-bottom:1px solid #e4e4e7;color:#333;'
+        const row = document.createElement('tr')
+        row.style.cssText = 'border-bottom:1px solid #e4e4e7;'
+        const cellCss = 'padding:4px 8px;font-size:11px;vertical-align:top;color:#333;word-break:break-word;'
 
-        const ownerSpan = document.createElement('span')
-        ownerSpan.textContent = a.owner || '(未設定)'
-        ownerSpan.style.cssText = `font-size:11px;font-weight:700;min-width:110px;${a.owner ? '' : 'color:#aaa;font-weight:400;'}`
-        row.appendChild(ownerSpan)
+        // 担当者
+        const ownerTd = document.createElement('td')
+        ownerTd.textContent = a.owner || '(未設定)'
+        ownerTd.style.cssText = `${cellCss}font-weight:700;padding-left:16px;${a.owner ? '' : 'color:#aaa;font-weight:400;'}`
+        row.appendChild(ownerTd)
 
-        const descSpan = document.createElement('span')
-        descSpan.textContent = a.description
-        descSpan.style.cssText = 'flex:1;white-space:pre-wrap;word-break:break-word;'
-        row.appendChild(descSpan)
+        // 内容
+        const descTd = document.createElement('td')
+        descTd.textContent = a.description
+        descTd.style.cssText = `${cellCss}white-space:pre-wrap;`
+        row.appendChild(descTd)
 
+        // ステータス
         const statusInfo = actionStatusLabelsExport[a.status] ?? { label: a.status, color: '#888' }
-        const statusSpan = document.createElement('span')
-        statusSpan.textContent = `● ${statusInfo.label}`
-        statusSpan.style.cssText = `font-size:11px;font-weight:600;color:${statusInfo.color};min-width:70px;`
-        row.appendChild(statusSpan)
+        const statusTd = document.createElement('td')
+        statusTd.textContent = `● ${statusInfo.label}`
+        statusTd.style.cssText = `${cellCss}font-weight:600;color:${statusInfo.color};`
+        row.appendChild(statusTd)
 
-        const dueSpan = document.createElement('span')
-        dueSpan.style.cssText = 'font-size:11px;min-width:90px;'
+        // 期限
+        const dueTd = document.createElement('td')
+        dueTd.style.cssText = cellCss
         if (a.dueDate) {
           const overdue = new Date(a.dueDate) < new Date()
-          dueSpan.textContent = a.dueDate
-          dueSpan.style.cssText += `color:${overdue ? '#dc2626;font-weight:700' : '#888'};`
+          dueTd.textContent = a.dueDate
+          if (overdue) dueTd.style.cssText += 'color:#dc2626;font-weight:700;'
+          else dueTd.style.cssText += 'color:#888;'
         }
-        row.appendChild(dueSpan)
+        row.appendChild(dueTd)
 
-        const parentSpan = document.createElement('span')
-        parentSpan.textContent = `${typeLabelsExport[a.parentType] ?? a.parentType} / ${a.parentTitle}`
-        parentSpan.style.cssText = 'font-size:11px;color:#888;min-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'
-        row.appendChild(parentSpan)
+        // 親アイテム
+        const parentTd = document.createElement('td')
+        parentTd.style.cssText = `${cellCss}color:#888;overflow:hidden;text-overflow:ellipsis;`
+        parentTd.textContent = `${typeLabelsExport[a.parentType] ?? a.parentType} / ${a.parentTitle}`
+        row.appendChild(parentTd)
 
-        const commentSpan = document.createElement('span')
-        commentSpan.textContent = a.weeklyComment
-        commentSpan.style.cssText = 'font-size:11px;min-width:200px;white-space:pre-wrap;word-break:break-word;color:#333;'
-        row.appendChild(commentSpan)
+        // 今週のコメント
+        const commentTd = document.createElement('td')
+        commentTd.textContent = a.weeklyComment
+        commentTd.style.cssText = `${cellCss}white-space:pre-wrap;`
+        row.appendChild(commentTd)
 
-        const lastCommentSpan = document.createElement('span')
-        lastCommentSpan.textContent = a.lastWeekComment
-        lastCommentSpan.style.cssText = 'font-size:11px;min-width:200px;white-space:pre-wrap;word-break:break-word;color:#888;'
-        row.appendChild(lastCommentSpan)
+        // 先週のコメント
+        const lastCommentTd = document.createElement('td')
+        lastCommentTd.textContent = a.lastWeekComment
+        lastCommentTd.style.cssText = `${cellCss}white-space:pre-wrap;color:#888;`
+        row.appendChild(lastCommentTd)
 
-        container.appendChild(row)
+        tbody.appendChild(row)
       }
     }
   }
+
+  table.appendChild(tbody)
+  container.appendChild(table)
 
   if (totalRows === 0) {
     const empty = document.createElement('p')
